@@ -18,37 +18,37 @@ public class reports {
     reportIMPL reportIMPL;
 
     @GetMapping(value = "/fundRequestHistory")
-    public ResponseEntity<customAPIResponse<List<fundRequestHistoryDTO>>> fundRequestHistory(@RequestParam LocalDate fromDate, @RequestParam LocalDate toDate, @RequestParam String paymentId){
+    public ResponseEntity<customAPIResponse<List<fundRequestHistoryDTO>>> fundRequestHistory(@RequestParam LocalDate fromDate, @RequestParam LocalDate toDate, @RequestParam String paymentId) {
         return reportIMPL.fundRequestHistory(fromDate, toDate, paymentId);
     }
 
     @GetMapping(value = "/transferHistory")
-    public ResponseEntity<customAPIResponse<List<transferHistoryDTO>>> transferHistory(@RequestParam LocalDate fromDate, @RequestParam LocalDate toDate, @RequestParam String fromAccount, @RequestParam String toAccount, @RequestParam String chanel){
+    public ResponseEntity<customAPIResponse<List<transferHistoryDTO>>> transferHistory(@RequestParam LocalDate fromDate, @RequestParam LocalDate toDate, @RequestParam String fromAccount, @RequestParam String toAccount, @RequestParam String chanel) {
         return reportIMPL.transferHistory(fromDate, toDate, fromAccount, toAccount, chanel);
     }
 
     @GetMapping(value = "/get-user-report")
-    public ResponseEntity<customAPIResponse<List<userReportDTO>>> getUserReport(){
+    public ResponseEntity<customAPIResponse<List<userReportDTO>>> getUserReport() {
         return reportIMPL.getUserReport();
     }
 
     @GetMapping(value = "/get-account-report")
-    public ResponseEntity<customAPIResponse<List<accountReportDTO>>> getUAccountReport(){
-        return reportIMPL.getUAccountReport();
+    public ResponseEntity<customAPIResponse<List<accountReportDTO>>> getAccountReport() {
+        return reportIMPL.getAccountReport();
     }
 
     @GetMapping(value = "/get-payment-report")
-    public ResponseEntity<customAPIResponse<List<paymentReportDTO>>> getPaymentReport(){
+    public ResponseEntity<customAPIResponse<List<paymentReportDTO>>> getPaymentReport() {
         return reportIMPL.getPaymentReport();
     }
 
     @GetMapping(value = "/get-balance-report")
-    public ResponseEntity<customAPIResponse<List<getBalanceReportDTO>>> getBalanceReport(@RequestParam LocalDate fromDate, @RequestParam LocalDate toDate, @RequestParam String bankName, @RequestParam String account, @RequestParam String status){
+    public ResponseEntity<customAPIResponse<List<getBalanceReportDTO>>> getBalanceReport(@RequestParam LocalDate fromDate, @RequestParam LocalDate toDate, @RequestParam String bankName, @RequestParam String account, @RequestParam String status) {
         return reportIMPL.getBalanceReport(fromDate, toDate, bankName, account, status);
     }
 
     @GetMapping(value = "/get-repo-report")
-    public ResponseEntity<customAPIResponse<List<getRepoReportDTO>>> getRepoReport(@RequestParam LocalDate fromDate, @RequestParam LocalDate toDate, @RequestParam String repoType, @RequestParam String accountNumber, @RequestParam String investStatus, @RequestParam String deleteStatus){
+    public ResponseEntity<customAPIResponse<List<getRepoReportDTO>>> getRepoReport(@RequestParam LocalDate fromDate, @RequestParam LocalDate toDate, @RequestParam String repoType, @RequestParam String accountNumber, @RequestParam String investStatus, @RequestParam String deleteStatus) {
         return reportIMPL.getRepoReport(fromDate, toDate, repoType, accountNumber, investStatus, deleteStatus);
     }
 }

@@ -1,18 +1,16 @@
 package SLICGL.example.SLICGL_Inter_Bant_Transfer_Management.DTO;
 
-import java.time.LocalDate;
-
 public class balanceUpdateDTO {
     private String balanceId;
-    private float balanceAmount;
-    private float outstandingBalance;
+    private Float balanceAmount;
+    private Float outstandingBalance;
     private String action;
-    private float adjustmentAmount;
+    private Float adjustmentAmount;
 
     public balanceUpdateDTO() {
     }
 
-    public balanceUpdateDTO(String balanceId, float balanceAmount, float outstandingBalance, String action, float adjustmentAmount) {
+    public balanceUpdateDTO(String balanceId, Float balanceAmount, Float outstandingBalance, String action, Float adjustmentAmount) {
         this.balanceId = balanceId;
         this.balanceAmount = balanceAmount;
         this.outstandingBalance = outstandingBalance;
@@ -28,19 +26,19 @@ public class balanceUpdateDTO {
         this.balanceId = balanceId;
     }
 
-    public float getBalanceAmount() {
+    public Float getBalanceAmount() {
         return balanceAmount;
     }
 
-    public void setBalanceAmount(float balanceAmount) {
+    public void setBalanceAmount(Float balanceAmount) {
         this.balanceAmount = balanceAmount;
     }
 
-    public float getOutstandingBalance() {
+    public Float getOutstandingBalance() {
         return outstandingBalance;
     }
 
-    public void setOutstandingBalance(float outstandingBalance) {
+    public void setOutstandingBalance(Float outstandingBalance) {
         this.outstandingBalance = outstandingBalance;
     }
 
@@ -52,11 +50,11 @@ public class balanceUpdateDTO {
         this.action = action;
     }
 
-    public float getAdjustmentAmount() {
+    public Float getAdjustmentAmount() {
         return adjustmentAmount;
     }
 
-    public void setAdjustmentAmount(float adjustmentAmount) {
+    public void setAdjustmentAmount(Float adjustmentAmount) {
         this.adjustmentAmount = adjustmentAmount;
     }
 }

@@ -2,6 +2,7 @@ package SLICGL.example.SLICGL_Inter_Bant_Transfer_Management.Entity;
 
 import jakarta.persistence.*;
 
+import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 
@@ -13,7 +14,7 @@ public class forecastRequest {
     @Column(name = "request_id", length = 13, nullable = false)
     private String requestId;
     @Column(name = "request_amount", length = 10, nullable = false)
-    private float requestAmount;
+    private BigDecimal requestAmount;
     @Column(name = "request_date", length = 30, nullable = false)
     private LocalDateTime requestDate;
     @Column(name = "required_date", length = 10, nullable = false)
@@ -36,7 +37,7 @@ public class forecastRequest {
     public forecastRequest() {
     }
 
-    public forecastRequest(String requestId, float requestAmount, LocalDateTime requestDate, LocalDate requiredDate, int deleteStatus, User deleted_by, User requestedBy, SLICGL.example.SLICGL_Inter_Bant_Transfer_Management.Entity.payment payment, SLICGL.example.SLICGL_Inter_Bant_Transfer_Management.Entity.bankAccount bankAccount) {
+    public forecastRequest(String requestId, BigDecimal requestAmount, LocalDateTime requestDate, LocalDate requiredDate, int deleteStatus, User deleted_by, User requestedBy, payment payment, bankAccount bankAccount) {
         this.requestId = requestId;
         this.requestAmount = requestAmount;
         this.requestDate = requestDate;
@@ -56,11 +57,11 @@ public class forecastRequest {
         this.requestId = requestId;
     }
 
-    public float getRequestAmount() {
+    public BigDecimal getRequestAmount() {
         return requestAmount;
     }
 
-    public void setRequestAmount(float requestAmount) {
+    public void setRequestAmount(BigDecimal requestAmount) {
         this.requestAmount = requestAmount;
     }
 
@@ -104,19 +105,19 @@ public class forecastRequest {
         this.requestedBy = requestedBy;
     }
 
-    public SLICGL.example.SLICGL_Inter_Bant_Transfer_Management.Entity.payment getPayment() {
+    public payment getPayment() {
         return payment;
     }
 
-    public void setPayment(SLICGL.example.SLICGL_Inter_Bant_Transfer_Management.Entity.payment payment) {
+    public void setPayment(payment payment) {
         this.payment = payment;
     }
 
-    public SLICGL.example.SLICGL_Inter_Bant_Transfer_Management.Entity.bankAccount getBankAccount() {
+    public bankAccount getBankAccount() {
         return bankAccount;
     }
 
-    public void setBankAccount(SLICGL.example.SLICGL_Inter_Bant_Transfer_Management.Entity.bankAccount bankAccount) {
+    public void setBankAccount(bankAccount bankAccount) {
         this.bankAccount = bankAccount;
     }
 }

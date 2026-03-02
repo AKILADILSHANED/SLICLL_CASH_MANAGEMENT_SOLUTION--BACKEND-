@@ -10,11 +10,11 @@ import java.util.List;
 
 public interface fundRequestService {
     public ResponseEntity<customAPIResponse<String>> newFundRequest(newFundRequestDTO fundRequest);
-    public ResponseEntity<customAPIResponse<List<getFundRequestDetailsDTO>>> requestDetails(LocalDate requiredDate, int requestType);
-    public ResponseEntity<customAPIResponse<searchRequestForUpdateDTO>> searchRequestForUpdate(String requestId, int requestType);
+    public ResponseEntity<customAPIResponse<List<getFundRequestDetailsDTO>>> requestDetails(LocalDate requiredDate, String requestType);
+    public ResponseEntity<customAPIResponse<searchRequestForUpdateDTO>> searchRequestForUpdate(String requestId, String requestType);
     public ResponseEntity<customAPIResponse<String>> saveUpdateFundRequest(updateFundRequestDTO updatedRequest);
-    public ResponseEntity<customAPIResponse<fundRequestDeleteDTO>> deleteFundRequest(String requestId, int requestType);
-    public ResponseEntity<customAPIResponse<String>> saveDeleteFundRequest(String requestId, int requestType);
+    public ResponseEntity<customAPIResponse<fundRequestDeleteDTO>> deleteFundRequest(String requestId, Integer requestType);
+    public ResponseEntity<customAPIResponse<String>> saveDeleteFundRequest(String requestId, Integer requestType);
     public ResponseEntity<customAPIResponse<List<getFundRequestForApproveDTO>>> getFundRequestForApprove();
     public ResponseEntity<customAPIResponse<String>> approveRequest(String requestId);
     public ResponseEntity<customAPIResponse<List<getFundRequestForReverseDTO>>> getFundRequestForReverse();

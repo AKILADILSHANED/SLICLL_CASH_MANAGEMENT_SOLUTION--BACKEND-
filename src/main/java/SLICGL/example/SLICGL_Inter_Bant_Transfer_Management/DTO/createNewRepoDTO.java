@@ -3,14 +3,14 @@ package SLICGL.example.SLICGL_Inter_Bant_Transfer_Management.DTO;
 
 public class createNewRepoDTO {
     private String accountID;
-    private int repoType;
+    private Integer repoType;
     private String repoValue;
-    private int eligibility;
+    private Integer eligibility;
 
     public createNewRepoDTO() {
     }
 
-    public createNewRepoDTO(String accountID, int repoType, String repoValue, int eligibility) {
+    public createNewRepoDTO(String accountID, Integer repoType, String repoValue, Integer eligibility) {
         this.accountID = accountID;
         this.repoType = repoType;
         this.repoValue = repoValue;
@@ -25,11 +25,11 @@ public class createNewRepoDTO {
         this.accountID = accountID;
     }
 
-    public int getRepoType() {
+    public Integer getRepoType() {
         return repoType;
     }
 
-    public void setRepoType(int repoType) {
+    public void setRepoType(Integer repoType) {
         this.repoType = repoType;
     }
 
@@ -41,11 +41,11 @@ public class createNewRepoDTO {
         this.repoValue = repoValue;
     }
 
-    public int getEligibility() {
+    public Integer getEligibility() {
         return eligibility;
     }
 
-    public void setEligibility(int eligibility) {
+    public void setEligibility(Integer eligibility) {
         this.eligibility = eligibility;
     }
 }

@@ -1,18 +1,20 @@
 package SLICGL.example.SLICGL_Inter_Bant_Transfer_Management.DTO;
 
+import java.math.BigDecimal;
+
 public class updateFundRequestDTO {
     private String requestId;
     private String accountId;
-    private float requestAmount;
-    private float outstandingAmount;
+    private BigDecimal requestAmount;
+    private BigDecimal outstandingAmount;
     private String paymentType;
     private String adjustmentType;
-    private float adjustmentAmount;
+    private BigDecimal adjustmentAmount;
 
     public updateFundRequestDTO() {
     }
 
-    public updateFundRequestDTO(String requestId, String accountId, float requestAmount, float outstandingAmount, String paymentType, String adjustmentType, float adjustmentAmount) {
+    public updateFundRequestDTO(String requestId, String accountId, BigDecimal requestAmount, BigDecimal outstandingAmount, String paymentType, String adjustmentType, BigDecimal adjustmentAmount) {
         this.requestId = requestId;
         this.accountId = accountId;
         this.requestAmount = requestAmount;
@@ -38,6 +40,22 @@ public class updateFundRequestDTO {
         this.accountId = accountId;
     }
 
+    public BigDecimal getRequestAmount() {
+        return requestAmount;
+    }
+
+    public void setRequestAmount(BigDecimal requestAmount) {
+        this.requestAmount = requestAmount;
+    }
+
+    public BigDecimal getOutstandingAmount() {
+        return outstandingAmount;
+    }
+
+    public void setOutstandingAmount(BigDecimal outstandingAmount) {
+        this.outstandingAmount = outstandingAmount;
+    }
+
     public String getPaymentType() {
         return paymentType;
     }
@@ -54,27 +72,11 @@ public class updateFundRequestDTO {
         this.adjustmentType = adjustmentType;
     }
 
-    public float getAdjustmentAmount() {
+    public BigDecimal getAdjustmentAmount() {
         return adjustmentAmount;
     }
 
-    public void setAdjustmentAmount(float adjustmentAmount) {
+    public void setAdjustmentAmount(BigDecimal adjustmentAmount) {
         this.adjustmentAmount = adjustmentAmount;
-    }
-
-    public float getRequestAmount() {
-        return requestAmount;
-    }
-
-    public void setRequestAmount(float requestAmount) {
-        this.requestAmount = requestAmount;
-    }
-
-    public float getOutstandingAmount() {
-        return outstandingAmount;
-    }
-
-    public void setOutstandingAmount(float outstandingAmount) {
-        this.outstandingAmount = outstandingAmount;
     }
 }

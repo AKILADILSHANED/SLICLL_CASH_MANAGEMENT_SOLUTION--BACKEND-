@@ -12,7 +12,9 @@ import java.util.List;
 public interface paymentService {
     public ResponseEntity<customAPIResponse<paymentRegisterDTO>> paymentRegister(String paymentType);
     public ResponseEntity<customAPIResponse<paymentSearchDTO>> searchPayment(String paymentId);
+    public ResponseEntity<customAPIResponse<paymentSearchDTO>> searchPaymentForUpdate(String paymentId);
     public ResponseEntity<customAPIResponse<String>> updatePayment(String paymentType, String paymentId);
+    public ResponseEntity<customAPIResponse<paymentSearchDTO>> searchPaymentForDelete(String paymentId);
     public ResponseEntity<customAPIResponse<String>> deletePayment(String paymentId);
     public ResponseEntity<customAPIResponse<List<getPaymentsForFundRequestDTO>>> getPaymentsForFundRequest();
 }

@@ -3,6 +3,7 @@ package SLICGL.example.SLICGL_Inter_Bant_Transfer_Management.Service;
 import SLICGL.example.SLICGL_Inter_Bant_Transfer_Management.APIResponse.customAPIResponse;
 import SLICGL.example.SLICGL_Inter_Bant_Transfer_Management.DTO.*;
 import SLICGL.example.SLICGL_Inter_Bant_Transfer_Management.Entity.transferChannel;
+import SLICGL.example.SLICGL_Inter_Bant_Transfer_Management.Logs.LogActivity;
 import SLICGL.example.SLICGL_Inter_Bant_Transfer_Management.Repositoriy.UserRepo;
 import SLICGL.example.SLICGL_Inter_Bant_Transfer_Management.Repositoriy.transferChannelRepo;
 import SLICGL.example.SLICGL_Inter_Bant_Transfer_Management.SqlMappers.channelDetailsMapper;
@@ -22,7 +23,7 @@ import java.util.List;
 import java.util.Optional;
 
 @Service
-public class transferChannelIMPL implements transferChannelService{
+public class transferChannelIMPL implements transferChannelService {
     @Autowired
     transferChannelRepo transferChannelRepository;
     @Autowired
@@ -35,14 +36,14 @@ public class transferChannelIMPL implements transferChannelService{
     @Transactional
     @Override
     public ResponseEntity<customAPIResponse<String>> addChannel(addNewChannelDTO newChannel) {
-        try{
+        try {
             String newChannelId;
             //Get last Channel ID from the table;
             String lastChannelId = transferChannelRepository.getLastChannelId();
-            if(lastChannelId == null){
+            if (lastChannelId == null) {
                 newChannelId = "CHNL-01";
-            }else {
-                int numericPart = Integer.parseInt(lastChannelId.substring(5,7)) + 1;
+            } else {
+                int numericPart = Integer.parseInt(lastChannelId.substring(5, 7)) + 1;
                 newChannelId = "CHNL-" + String.format("%02d", numericPart);
             }
 
@@ -66,7 +67,7 @@ public class transferChannelIMPL implements transferChannelService{
                             null
                     )
             );
-        }catch (Exception e){
+        } catch (Exception e) {
             return ResponseEntity.status(HttpStatus.OK).body(
                     new customAPIResponse<>(
                             false,
@@ -79,10 +80,10 @@ public class transferChannelIMPL implements transferChannelService{
 
     @Override
     public ResponseEntity<customAPIResponse<List<channelDetailsDTO>>> channelDetails() {
-        try{
+        try {
             String Sql = "SELECT CHNL.channel_id, CHNL.channel_type, CHNL.short_key, CHNL.priority_level, CHNL.created_date, CASE WHEN CHNL.deleted_status = 0 THEN 'Active' ELSE 'Deleted' END AS 'deleted_status', CASE WHEN CHNL.delete_by IS NULL THEN 'N/A' ELSE USRDELETED.user_first_name END AS 'delete_by', USRDEFINED.user_first_name FROM transfer_channel CHNL LEFT JOIN user USRDEFINED ON CHNL.defined_by = USRDEFINED.user_id LEFT JOIN user USRDELETED ON CHNL.delete_by = USRDELETED.user_id ORDER BY CHNL.priority_level ASC";
             List<channelDetailsDTO> channelDetails = template.query(Sql, new channelDetailsMapper());
-            if(channelDetails.isEmpty()){
+            if (channelDetails.isEmpty()) {
                 return ResponseEntity.status(HttpStatus.OK).body(
                         new customAPIResponse<>(
                                 false,
@@ -90,7 +91,7 @@ public class transferChannelIMPL implements transferChannelService{
                                 null
                         )
                 );
-            }else {
+            } else {
                 return ResponseEntity.status(HttpStatus.OK).body(
                         new customAPIResponse<>(
                                 true,
@@ -99,7 +100,7 @@ public class transferChannelIMPL implements transferChannelService{
                         )
                 );
             }
-        }catch (Exception e){
+        } catch (Exception e) {
             return ResponseEntity.status(HttpStatus.OK).body(
                     new customAPIResponse<>(
                             false,
@@ -113,10 +114,10 @@ public class transferChannelIMPL implements transferChannelService{
     @Transactional
     @Override
     public ResponseEntity<customAPIResponse<String>> removeChannel(String channelId) {
-        try{
+        try {
             //Check whether any record is available for provided channel id;
             Optional<transferChannel> channel = transferChannelRepository.findById(channelId);
-            if(channel.isEmpty()){
+            if (channel.isEmpty()) {
                 return ResponseEntity.status(HttpStatus.OK).body(
                         new customAPIResponse<>(
                                 false,
@@ -124,11 +125,11 @@ public class transferChannelIMPL implements transferChannelService{
                                 null
                         )
                 );
-            }else {
+            } else {
                 int affectedRow = transferChannelRepository.removeChannel(session.getAttribute("userId").toString(), channelId);
-                if(affectedRow > 0){
+                if (affectedRow > 0) {
                     //Check whether the record is already removed or not;
-                    if(channel.get().getDeleteStatus() == 1){
+                    if (channel.get().getDeleteStatus() == 1) {
                         return ResponseEntity.status(HttpStatus.OK).body(
                                 new customAPIResponse<>(
                                         false,
@@ -136,7 +137,7 @@ public class transferChannelIMPL implements transferChannelService{
                                         null
                                 )
                         );
-                    }else{
+                    } else {
                         return ResponseEntity.status(HttpStatus.OK).body(
                                 new customAPIResponse<>(
                                         true,
@@ -145,12 +146,12 @@ public class transferChannelIMPL implements transferChannelService{
                                 )
                         );
                     }
-                }else {
+                } else {
                     //No code block to be run;
                     return null;
                 }
             }
-        }catch (Exception e){
+        } catch (Exception e) {
             return ResponseEntity.status(HttpStatus.OK).body(
                     new customAPIResponse<>(
                             false,
@@ -163,11 +164,11 @@ public class transferChannelIMPL implements transferChannelService{
 
     @Override
     public ResponseEntity<customAPIResponse<channelSearchForRemoveDTO>> searchChannelForRemove(String channelId) {
-        try{
+        try {
             //Check whether any record is available for provided channel id;
             Optional<transferChannel> channel = transferChannelRepository.findById(channelId);
 
-            if(channel.isEmpty()){
+            if (channel.isEmpty()) {
                 return ResponseEntity.status(HttpStatus.OK).body(
                         new customAPIResponse<>(
                                 false,
@@ -175,7 +176,7 @@ public class transferChannelIMPL implements transferChannelService{
                                 null
                         )
                 );
-            }else {
+            } else {
                 String Sql = "SELECT CHNL.channel_id, CHNL.channel_type, CHNL.short_key, CHNL.priority_level, CHNL.created_date, USRDEFINED.user_first_name FROM transfer_channel CHNL LEFT JOIN user USRDEFINED ON CHNL.defined_by = USRDEFINED.user_id WHERE CHNL.channel_id = ?";
                 List<channelSearchForRemoveDTO> searchedChannel = template.query(Sql, new Object[]{channelId}, new searchChannelForRemoveMapper());
                 return ResponseEntity.status(HttpStatus.OK).body(
@@ -186,7 +187,7 @@ public class transferChannelIMPL implements transferChannelService{
                         )
                 );
             }
-        }catch (Exception e){
+        } catch (Exception e) {
             return ResponseEntity.status(HttpStatus.OK).body(
                     new customAPIResponse<>(
                             false,
@@ -199,10 +200,10 @@ public class transferChannelIMPL implements transferChannelService{
 
     @Override
     public ResponseEntity<customAPIResponse<List<setPriorityLevelDTO>>> setPriorityLevel() {
-        try{
+        try {
             String Sql = "SELECT channel_id, channel_type, short_key, priority_level FROM transfer_channel WHERE deleted_status = 0 ORDER BY priority_level ASC";
             List<setPriorityLevelDTO> priorityLevelList = template.query(Sql, new setPriorityLevelMapper());
-            if(priorityLevelList.isEmpty()){
+            if (priorityLevelList.isEmpty()) {
                 return ResponseEntity.status(HttpStatus.OK).body(
                         new customAPIResponse<>(
                                 false,
@@ -210,7 +211,7 @@ public class transferChannelIMPL implements transferChannelService{
                                 null
                         )
                 );
-            }else {
+            } else {
                 return ResponseEntity.status(HttpStatus.OK).body(
                         new customAPIResponse<>(
                                 true,
@@ -219,7 +220,7 @@ public class transferChannelIMPL implements transferChannelService{
                         )
                 );
             }
-        }catch (Exception e){
+        } catch (Exception e) {
             return ResponseEntity.status(HttpStatus.OK).body(
                     new customAPIResponse<>(
                             false,
@@ -233,9 +234,9 @@ public class transferChannelIMPL implements transferChannelService{
     @Transactional
     @Override
     public ResponseEntity<customAPIResponse<String>> changePriorityLevel(String channelId, int newLevel) {
-        try{
+        try {
             int affectedRows = transferChannelRepository.updateNewLevel(newLevel, channelId);
-            if(affectedRows > 0){
+            if (affectedRows > 0) {
                 return ResponseEntity.status(HttpStatus.OK).body(
                         new customAPIResponse<>(
                                 true,
@@ -243,7 +244,7 @@ public class transferChannelIMPL implements transferChannelService{
                                 null
                         )
                 );
-            }else {
+            } else {
                 return ResponseEntity.status(HttpStatus.OK).body(
                         new customAPIResponse<>(
                                 false,
@@ -252,7 +253,7 @@ public class transferChannelIMPL implements transferChannelService{
                         )
                 );
             }
-        }catch (Exception e){
+        } catch (Exception e) {
             return ResponseEntity.status(HttpStatus.OK).body(
                     new customAPIResponse<>(
                             false,
@@ -265,10 +266,10 @@ public class transferChannelIMPL implements transferChannelService{
 
     @Override
     public ResponseEntity<customAPIResponse<List<getChannelsForDefineOptionsDTO>>> getChannelsForDefineOptions() {
-        try{
+        try {
             String Sql = "SELECT channel_id, channel_type, short_key FROM transfer_channel WHERE deleted_status = 0;";
             List<getChannelsForDefineOptionsDTO> channelList = template.query(Sql, new getChannelsForDefineOptionsMapper());
-            if(channelList.isEmpty()){
+            if (channelList.isEmpty()) {
                 return ResponseEntity.status(HttpStatus.OK).body(
                         new customAPIResponse<>(
                                 false,
@@ -276,7 +277,7 @@ public class transferChannelIMPL implements transferChannelService{
                                 null
                         )
                 );
-            }else {
+            } else {
                 return ResponseEntity.status(HttpStatus.OK).body(
                         new customAPIResponse<>(
                                 true,
@@ -285,7 +286,7 @@ public class transferChannelIMPL implements transferChannelService{
                         )
                 );
             }
-        }catch (Exception e){
+        } catch (Exception e) {
             return ResponseEntity.status(HttpStatus.OK).body(
                     new customAPIResponse<>(
                             false,
@@ -297,37 +298,25 @@ public class transferChannelIMPL implements transferChannelService{
     }
 
     @Override
+    @LogActivity(methodDescription = "This method will fetch active transfer chanel list")
     public ResponseEntity<customAPIResponse<List<transferChanelForTransferHistory>>> getTransferChanel() {
-        try{
-            List<transferChanelForTransferHistory> chanelList = transferChannelRepository.chanelList();
-            if(!chanelList.isEmpty()){
-                return ResponseEntity.status(HttpStatus.OK).body(
-                        new customAPIResponse<List<transferChanelForTransferHistory>>(
-                                true,
-                                null,
-                                chanelList
-                        )
-                );
-            }else {
-                return ResponseEntity.status(HttpStatus.CONFLICT).body(
-                        new customAPIResponse<>(
-                                false,
-                                "No Transfer Chanel details to fetch!",
-                                null
-                        )
-                );
-            }
-
-        }catch (Exception e){
-            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(
+        List<transferChanelForTransferHistory> chanelList = transferChannelRepository.chanelList();
+        if (!chanelList.isEmpty()) {
+            return ResponseEntity.status(HttpStatus.OK).body(
+                    new customAPIResponse<List<transferChanelForTransferHistory>>(
+                            true,
+                            null,
+                            chanelList
+                    )
+            );
+        } else {
+            return ResponseEntity.status(HttpStatus.NOT_FOUND).body(
                     new customAPIResponse<>(
                             false,
-                            "Un-expected error occurred while fetching channel details. Please contact administrator!",
+                            "No Transfer Chanel details to fetch",
                             null
                     )
             );
         }
     }
-
-
 }

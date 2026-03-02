@@ -1,4 +1,6 @@
 package SLICGL.example.SLICGL_Inter_Bant_Transfer_Management.DTO;
+
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import jakarta.annotation.Nullable;
 import org.springframework.web.multipart.MultipartFile;
 
@@ -10,6 +12,7 @@ public class updateUserDTO {
     private String userEmail;
     private String userPosition;
     @Nullable
+    @JsonIgnore
     private MultipartFile userSignature;
 
     public updateUserDTO() {

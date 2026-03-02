@@ -34,5 +34,6 @@ public interface bankAccountRepo extends JpaRepository<bankAccount, String> {
     @Query(value = "SELECT account_id, account_number FROM bank_account WHERE delete_status = 0", nativeQuery = true)
     public List<getBankAccountListDTO> accountList();
 
-
+    @Query(value = "SELECT CASE WHEN (SELECT acc.account_id FROM bank_account acc WHERE acc.account_id = ? AND acc.delete_status = '0') IS NULL THEN false ELSE true END AS 'availability'", nativeQuery = true)
+    public Integer accountAvailability(String accountId);
 }

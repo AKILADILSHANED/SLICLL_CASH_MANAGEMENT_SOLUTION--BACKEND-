@@ -10,7 +10,7 @@ import java.util.List;
 
 public interface accountBalanceService {
     public ResponseEntity<customAPIResponse<List<balanceEnterDTO>>> getAvailableAccounts();
-    public ResponseEntity<customAPIResponse<String>> saveBalance(String accountId, float balanceAmount);
+    public ResponseEntity<customAPIResponse<String>> saveBalance(String accountId, Float balanceAmount);
     public ResponseEntity<customAPIResponse<List<getAllBalancesDTO>>> getAllBalances(LocalDate balanceDate);
     public ResponseEntity<customAPIResponse<getBalanceForUpdateDTO>> getBalanceForUpdate(String balanceId);
     public ResponseEntity<customAPIResponse<balanceUpdateDTO>> updateBalance(balanceUpdateDTO updatedBalance);

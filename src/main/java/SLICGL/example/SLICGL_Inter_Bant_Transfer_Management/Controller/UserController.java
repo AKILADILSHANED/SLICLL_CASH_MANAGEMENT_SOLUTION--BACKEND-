@@ -1,6 +1,7 @@
 package SLICGL.example.SLICGL_Inter_Bant_Transfer_Management.Controller;
 import SLICGL.example.SLICGL_Inter_Bant_Transfer_Management.APIResponse.customAPIResponse;
 import SLICGL.example.SLICGL_Inter_Bant_Transfer_Management.DTO.*;
+import SLICGL.example.SLICGL_Inter_Bant_Transfer_Management.Security.RequiresPermission;
 import SLICGL.example.SLICGL_Inter_Bant_Transfer_Management.Service.UserLoginIMPL;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.MediaType;
@@ -31,9 +32,19 @@ public class UserController {
         return userLogin.searchUser(userId);
     }
 
+    @GetMapping(value = "/user-search-for-update")
+    public ResponseEntity<customAPIResponse<searchUserDTO>> searchUserForUpdate(@RequestParam String userId){
+        return userLogin.searchUserForUpdate(userId);
+    }
+
     @PutMapping(value = "/user-update", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
     public ResponseEntity<customAPIResponse<updateUserDTO>> updateUser(@ModelAttribute updateUserDTO updatedUser){
         return userLogin.updateUser(updatedUser);
+    }
+
+    @GetMapping(value = "/user-search-for-delete")
+    public ResponseEntity<customAPIResponse<searchUserDTO>> searchUserForDelete(@RequestParam String userId){
+        return userLogin.searchUserForDelete(userId);
     }
 
     @PutMapping(value = "/user-delete")

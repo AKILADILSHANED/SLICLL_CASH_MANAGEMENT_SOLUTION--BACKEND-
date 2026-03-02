@@ -4,10 +4,13 @@ import SLICGL.example.SLICGL_Inter_Bant_Transfer_Management.APIResponse.customAP
 import SLICGL.example.SLICGL_Inter_Bant_Transfer_Management.DTO.*;
 import SLICGL.example.SLICGL_Inter_Bant_Transfer_Management.Entity.Repos;
 import SLICGL.example.SLICGL_Inter_Bant_Transfer_Management.Entity.transfers;
+import SLICGL.example.SLICGL_Inter_Bant_Transfer_Management.ExceptionHandlers.RepoExceptions.*;
+import SLICGL.example.SLICGL_Inter_Bant_Transfer_Management.Logs.LogActivity;
 import SLICGL.example.SLICGL_Inter_Bant_Transfer_Management.Repositoriy.UserRepo;
 import SLICGL.example.SLICGL_Inter_Bant_Transfer_Management.Repositoriy.bankAccountRepo;
 import SLICGL.example.SLICGL_Inter_Bant_Transfer_Management.Repositoriy.repoRepository;
 import SLICGL.example.SLICGL_Inter_Bant_Transfer_Management.Repositoriy.transfersRepo;
+import SLICGL.example.SLICGL_Inter_Bant_Transfer_Management.Security.RequiresPermission;
 import SLICGL.example.SLICGL_Inter_Bant_Transfer_Management.SqlMappers.*;
 import SLICGL.example.SLICGL_Inter_Bant_Transfer_Management.TransferIdGenerator;
 import jakarta.servlet.http.HttpSession;
@@ -26,7 +29,7 @@ import java.time.LocalDateTime;
 import java.util.List;
 
 @Service
-public class repoIMPL implements repoService{
+public class repoIMPL implements repoService {
 
     @Autowired
     repoRepository repoRepository;
@@ -56,33 +59,32 @@ public class repoIMPL implements repoService{
     crossAdjustmentIMPL crossAdjustmentIMPL;
 
     @Override
+    @RequiresPermission("FUNC-031")
+    @LogActivity(methodDescription = "This method will create a new repo")
     public ResponseEntity<customAPIResponse<String>> createNewRepo(createNewRepoDTO newRepoObject) {
-        try{
+        //Check whether user has been provided values for all required fields
+        if (newRepoObject.getAccountID() == null || newRepoObject.getRepoType() == null || newRepoObject.getRepoValue() == null || newRepoObject.getEligibility() == null || newRepoObject.getAccountID().isEmpty() || newRepoObject.getRepoValue().isEmpty()) {
+            throw new RepoInputDataViolationException("Please provide all required data for successful repo creation");
+        } else {
             BigDecimal repoValue = new BigDecimal(newRepoObject.getRepoValue());
             //Check whether the Repo value is minus value. Minus values should not be accepted;
-            if(repoValue.compareTo(BigDecimal.ZERO) < 0){
-                return ResponseEntity.status(HttpStatus.CONFLICT).body(
-                        new customAPIResponse<>(
-                                false,
-                                "REPO value can not be negative. Please provide positive value!",
-                                null
-                        )
-                );
-            }else {
+            if (repoValue.compareTo(BigDecimal.ZERO) < 0) {
+                throw new NegativeRepoBalanceException("Negative Repo values are not accepted");
+            } else {
                 //Create new REPO ID;
                 String newRepoId;
                 String currentYear = String.valueOf(LocalDate.now().getYear());
-                String currentMonth = String.format("%02d",LocalDate.now().getMonthValue());
+                String currentMonth = String.format("%02d", LocalDate.now().getMonthValue());
 
                 //Get last Repo ID from actual Repo table;
                 String lastRepoId = repoRepository.getLastRepoId();
-                if(lastRepoId == null){
+                if (lastRepoId == null) {
                     newRepoId = "REPO-" + currentYear + currentMonth + "-001";
-                }else {
-                    if((currentYear + currentMonth).equals(lastRepoId.substring(5,11))){
-                        int newNumericRepotId = Integer.parseInt(lastRepoId.substring(12,15)) + 1;
+                } else {
+                    if ((currentYear + currentMonth).equals(lastRepoId.substring(5, 11))) {
+                        int newNumericRepotId = Integer.parseInt(lastRepoId.substring(12, 15)) + 1;
                         newRepoId = "REPO-" + currentYear + currentMonth + String.format("-%03d", newNumericRepotId);
-                    }else {
+                    } else {
                         newRepoId = "REPO-" + currentYear + currentMonth + "-001";
                     }
                 }
@@ -103,7 +105,6 @@ public class repoIMPL implements repoService{
                         userRepository.findById(session.getAttribute("userId").toString()).get(),
                         accountRepository.findById(newRepoObject.getAccountID()).get()
                 ));
-
                 return ResponseEntity.status(HttpStatus.OK).body(
                         new customAPIResponse<>(
                                 true,
@@ -112,24 +113,21 @@ public class repoIMPL implements repoService{
                         )
                 );
             }
-        }catch (Exception e){
-            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(
-                    new customAPIResponse<>(
-                            false,
-                            "Un-expected error occurred while saving the Repo. Please contact administrator!",
-                            null
-                    )
-            );
         }
     }
 
     @Override
+    @RequiresPermission("FUNC-032")
+    @LogActivity(methodDescription = "This method will display repo details")
     public ResponseEntity<customAPIResponse<List<displayRepoDTO>>> displayRepo(String repoId) {
-        try{
+        //Check whether user provided repo is
+        if (repoId == null || repoId.isEmpty()) {
+            throw new RepoInputDataViolationException("Please provide valid repo id");
+        } else {
             String Sql = "SELECT rpo.repo_id, acc.account_number, rpo.repo_value AS 'opening_balance', COALESCE((SELECT COALESCE(SUM(rpoadj.adjustment_amount),0) AS 'Total_Adjustments' FROM repo_adjustment rpoadj LEFT JOIN cross_adjustment crsadj ON crsadj.cross_adjustment_id = rpoadj.cross_adjustment_id WHERE crsadj.is_reversed = 0 AND rpoadj.adjusted_repo = ?)+rpo.repo_value,0) AS 'closing_balance', rpo.maturity_value AS 'maturity_value', CASE WHEN rpo.interest_rate IS NULL THEN 'N/A' ELSE rpo.interest_rate END AS 'interest_rate', CASE WHEN rpo.repo_type = 1 THEN 'Par' WHEN rpo.repo_type = 2 THEN 'Non-Par' WHEN rpo.repo_type = 3 THEN 'TR' WHEN rpo.repo_type = 4 THEN 'Excess' END AS 'repo_type', CASE WHEN rpo.is_invested = 0 THEN 'Not-Invested' ELSE 'Invested' END AS 'investment_status', CASE WHEN rpo.invest_date IS NULL THEN 'N/A' ELSE DATE_FORMAT(rpo.invest_date, '%Y-%m-%d') END AS 'invest_date', CASE WHEN rpo.maturity_date IS NULL THEN 'N/A' ELSE DATE_FORMAT(rpo.maturity_date, '%Y-%m-%d') END AS 'maturity_date', DATE_FORMAT(rpo.created_date, '%Y-%m-%d') AS 'created_date', usr.user_first_name AS 'created_by', CASE WHEN rpo.is_deleted = 0 THEN 'Active' ELSE 'Deleted' END AS 'delete_status', CASE WHEN usrdlt.user_first_name IS NULL THEN 'N/A' ELSE usrdlt.user_first_name END AS 'deleted_user' FROM repos rpo LEFT JOIN bank_account acc ON acc.account_id = rpo.bank_account LEFT JOIN user usrdlt ON usrdlt.user_id = rpo.deleted_by LEFT JOIN user usr ON usr.user_id = rpo.created_by WHERE rpo.repo_id = ?";
 
             List<displayRepoDTO> displayRepo = template.query(Sql, new displayRepoMapper(), repoId, repoId);
-            if(!displayRepo.isEmpty()){
+            if (!displayRepo.isEmpty()) {
                 return ResponseEntity.status(HttpStatus.OK).body(
                         new customAPIResponse<>(
                                 true,
@@ -137,53 +135,30 @@ public class repoIMPL implements repoService{
                                 displayRepo
                         )
                 );
-            }else {
-            return ResponseEntity.status(HttpStatus.CONFLICT).body(
-                    new customAPIResponse<>(
-                            false,
-                            "No REPO details can be found for provided REPO ID!",
-                            null
-                    )
-            );
+            } else {
+                throw new RepoInputDataViolationException("No REPO details can be found for provided REPO ID");
             }
-        }catch (Exception e){
-            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(
-                    new customAPIResponse<>(
-                            false,
-                            "Un-expected error occurred while fetching Repo details. Please contact administrator!",
-                            null
-                    )
-            );
         }
     }
 
     @Override
+    @LogActivity(methodDescription = "This method will fetch active repo list")
     public ResponseEntity<customAPIResponse<List<getFromRepoListDTO>>> getToRepoList(String selectedRepo) {
-        try{
-            String Sql = "SELECT DISTINCT rpo.repo_id, COALESCE((SELECT COALESCE(SUM(rpoadj.adjustment_amount), 0) FROM repo_adjustment rpoadj LEFT JOIN cross_adjustment crsadj ON crsadj.cross_adjustment_id = rpoadj.cross_adjustment_id WHERE crsadj.is_reversed = 0 AND rpoadj.adjusted_repo = rpo.repo_id) + rpo.repo_value, 0) AS 'closing_balance' FROM repos rpo WHERE rpo.is_deleted = 0 AND rpo.is_invested = 0 AND DATE(rpo.created_date) = CURRENT_DATE AND rpo.repo_id <> ?";
-            List<getFromRepoListDTO> repoList = template.query(Sql, new getFromRepoListMapper(), selectedRepo);
-            if(!repoList.isEmpty()){
-                return ResponseEntity.status(HttpStatus.OK).body(
-                        new customAPIResponse<>(
-                                true,
-                                null,
-                                repoList
-                        )
-                );
-            }else {
-                return ResponseEntity.status(HttpStatus.CONFLICT).body(
-                        new customAPIResponse<>(
-                                false,
-                                "No Repos can be found for current date!",
-                                null
-                        )
-                );
-            }
-        }catch (Exception e){
-            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(
+        String Sql = "SELECT DISTINCT rpo.repo_id, COALESCE((SELECT COALESCE(SUM(rpoadj.adjustment_amount), 0) FROM repo_adjustment rpoadj LEFT JOIN cross_adjustment crsadj ON crsadj.cross_adjustment_id = rpoadj.cross_adjustment_id WHERE crsadj.is_reversed = 0 AND rpoadj.adjusted_repo = rpo.repo_id) + rpo.repo_value, 0) AS 'closing_balance' FROM repos rpo WHERE rpo.is_deleted = 0 AND rpo.is_invested = 0 AND DATE(rpo.created_date) = CURRENT_DATE AND rpo.repo_id <> ?";
+        List<getFromRepoListDTO> repoList = template.query(Sql, new getFromRepoListMapper(), selectedRepo);
+        if (!repoList.isEmpty()) {
+            return ResponseEntity.status(HttpStatus.OK).body(
+                    new customAPIResponse<>(
+                            true,
+                            null,
+                            repoList
+                    )
+            );
+        } else {
+            return ResponseEntity.status(HttpStatus.NOT_FOUND).body(
                     new customAPIResponse<>(
                             false,
-                            "Un-expected error occurred while fetching the repo data. Please contact administrator!",
+                            "No Repos can be found for current date!",
                             null
                     )
             );
@@ -191,32 +166,23 @@ public class repoIMPL implements repoService{
     }
 
     @Override
+    @LogActivity(methodDescription = "This method will fetch active repo list")
     public ResponseEntity<customAPIResponse<List<getFromRepoListDTO>>> getFromRepoList() {
-        try{
-            String Sql = "SELECT DISTINCT rpo.repo_id, COALESCE((SELECT COALESCE(SUM(rpoadj.adjustment_amount), 0) FROM repo_adjustment rpoadj LEFT JOIN cross_adjustment crsadj ON crsadj.cross_adjustment_id = rpoadj.cross_adjustment_id WHERE crsadj.is_reversed = 0 AND rpoadj.adjusted_repo = rpo.repo_id) + rpo.repo_value, 0) AS 'closing_balance' FROM repos rpo WHERE rpo.is_deleted = 0 AND rpo.is_invested = 0 AND DATE(rpo.created_date) = CURRENT_DATE";
-            List<getFromRepoListDTO> repoList = template.query(Sql, new getFromRepoListMapper());
-            if(!repoList.isEmpty()){
-                return ResponseEntity.status(HttpStatus.OK).body(
-                        new customAPIResponse<>(
-                                true,
-                                null,
-                                repoList
-                        )
-                );
-            }else {
-                return ResponseEntity.status(HttpStatus.CONFLICT).body(
-                        new customAPIResponse<>(
-                                false,
-                                "No Repos can be found for current date!",
-                                null
-                        )
-                );
-            }
-        }catch (Exception e){
-            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(
+        String Sql = "SELECT DISTINCT rpo.repo_id, COALESCE((SELECT COALESCE(SUM(rpoadj.adjustment_amount), 0) FROM repo_adjustment rpoadj LEFT JOIN cross_adjustment crsadj ON crsadj.cross_adjustment_id = rpoadj.cross_adjustment_id WHERE crsadj.is_reversed = 0 AND rpoadj.adjusted_repo = rpo.repo_id) + rpo.repo_value, 0) AS 'closing_balance' FROM repos rpo WHERE rpo.is_deleted = 0 AND rpo.is_invested = 0 AND DATE(rpo.created_date) = CURRENT_DATE";
+        List<getFromRepoListDTO> repoList = template.query(Sql, new getFromRepoListMapper());
+        if (!repoList.isEmpty()) {
+            return ResponseEntity.status(HttpStatus.OK).body(
+                    new customAPIResponse<>(
+                            true,
+                            null,
+                            repoList
+                    )
+            );
+        } else {
+            return ResponseEntity.status(HttpStatus.NOT_FOUND).body(
                     new customAPIResponse<>(
                             false,
-                            "Un-expected error occurred while fetching the repo data. Please contact administrator!",
+                            "No Repos can be found for current date",
                             null
                     )
             );
@@ -225,27 +191,29 @@ public class repoIMPL implements repoService{
 
     @Transactional
     @Override
+    @RequiresPermission("FUNC-033")
+    @LogActivity(methodDescription = "This method will create a new repo account")
     public ResponseEntity<customAPIResponse<String>> adjustmentNewRepo(adjustmentNewRepoDTO adjustmentNewRepo) {
-        try{
+        try {
             //Check whether newly create repo value is higher than the existing repo's value;
             BigDecimal closingBalance = repoRepository.getRepoClosingBalance(adjustmentNewRepo.getFromRepo(), adjustmentNewRepo.getFromRepo());
             BigDecimal repoValue = BigDecimal.valueOf(adjustmentNewRepo.getRepoValue());
-            if(closingBalance.compareTo(repoValue) >= 0){
+            if (closingBalance.compareTo(repoValue) >= 0) {
                 //Save new repo data to the database;
                 //Create new REPO ID;
                 String newRepoId;
                 String currentYear = String.valueOf(LocalDate.now().getYear());
-                String currentMonth = String.format("%02d",LocalDate.now().getMonthValue());
+                String currentMonth = String.format("%02d", LocalDate.now().getMonthValue());
 
                 //Get last Repo ID from actual Repo table;
                 String lastRepoId = repoRepository.getLastRepoId();
-                if(lastRepoId == null){
+                if (lastRepoId == null) {
                     newRepoId = "REPO-" + currentYear + currentMonth + "-001";
-                }else {
-                    if((currentYear + currentMonth).equals(lastRepoId.substring(5,11))){
-                        int newNumericRepotId = Integer.parseInt(lastRepoId.substring(12,15)) + 1;
+                } else {
+                    if ((currentYear + currentMonth).equals(lastRepoId.substring(5, 11))) {
+                        int newNumericRepotId = Integer.parseInt(lastRepoId.substring(12, 15)) + 1;
                         newRepoId = "REPO-" + currentYear + currentMonth + String.format("-%03d", newNumericRepotId);
-                    }else {
+                    } else {
                         newRepoId = "REPO-" + currentYear + currentMonth + "-001";
                     }
                 }
@@ -270,13 +238,13 @@ public class repoIMPL implements repoService{
                 );
                 //After creating the new repo, need to check whether the new repo is created in same bank account;
                 //or separate bank account from fund sending repo;
-                if(adjustmentNewRepo.getRepoAccount().equals(repoRepository.getRepoBankAccount(adjustmentNewRepo.getFromRepo()))){
+                if (adjustmentNewRepo.getRepoAccount().equals(repoRepository.getRepoBankAccount(adjustmentNewRepo.getFromRepo()))) {
                     //Create new cross adjustment;
                     String crossAdjustment = crossAdjustmentIMPL.saveNewCrossAdjustment();
                     //Save from repo adjustment into the database;
                     repoAdjustmentIMPL.saveNewAdjustment(
                             newRepoId,
-                            BigDecimal.valueOf(adjustmentNewRepo.getRepoValue()*-1),
+                            BigDecimal.valueOf(adjustmentNewRepo.getRepoValue() * -1),
                             adjustmentNewRepo.getFromRepo(),
                             null,
                             crossAdjustment
@@ -298,7 +266,7 @@ public class repoIMPL implements repoService{
                                     null
                             )
                     );
-                }else {
+                } else {
                     //Create new cross adjustment;
                     String crossAdjustment = crossAdjustmentIMPL.saveNewCrossAdjustment();
 
@@ -321,7 +289,7 @@ public class repoIMPL implements repoService{
                     //Save from repo adjustment into the database;
                     repoAdjustmentIMPL.saveNewAdjustment(
                             newRepoId,
-                            BigDecimal.valueOf(adjustmentNewRepo.getRepoValue()*-1),
+                            BigDecimal.valueOf(adjustmentNewRepo.getRepoValue() * -1),
                             adjustmentNewRepo.getFromRepo(),
                             transferId,
                             crossAdjustment
@@ -343,7 +311,7 @@ public class repoIMPL implements repoService{
                             )
                     );
                 }
-            }else {
+            } else {
                 return ResponseEntity.status(HttpStatus.CONFLICT).body(
                         new customAPIResponse<>(
                                 false,
@@ -352,7 +320,7 @@ public class repoIMPL implements repoService{
                         )
                 );
             }
-        }catch (Exception e){
+        } catch (Exception e) {
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(
                     new customAPIResponse<>(
                             false,
@@ -365,14 +333,19 @@ public class repoIMPL implements repoService{
 
     @Transactional
     @Override
+    @RequiresPermission("FUNC-033")
+    @LogActivity(methodDescription = "This method will funds transfer to an existing repo account")
     public ResponseEntity<customAPIResponse<String>> existingRepoTransfer(adjustmentExistingRepoDTO adjustmentExistingRepo) {
-        try{
+        //Check whether user provided all required values
+        if (adjustmentExistingRepo.getFromRepo() == null || adjustmentExistingRepo.getToRepo() == null || adjustmentExistingRepo.getRepoValue() == null || adjustmentExistingRepo.getTransferChanel() == null || adjustmentExistingRepo.getFromRepo().isEmpty() || adjustmentExistingRepo.getToRepo().isEmpty() || adjustmentExistingRepo.getTransferChanel().isEmpty()) {
+            throw new RepoInputDataViolationException("Please provide all required data");
+        } else {
             //Check whether transfer value is higher than the existing repo's closing balance;
             BigDecimal closingBalance = repoRepository.getRepoClosingBalance(adjustmentExistingRepo.getFromRepo(), adjustmentExistingRepo.getFromRepo());
             BigDecimal repoValue = adjustmentExistingRepo.getRepoValue();
-            if(closingBalance.compareTo(repoValue) >= 0){
+            if (closingBalance.compareTo(repoValue) >= 0) {
                 //Check whether from repo and to repo is in same bank account or different bank account;
-                if(repoRepository.getRepoBankAccount(adjustmentExistingRepo.getToRepo()).equals(repoRepository.getRepoBankAccount(adjustmentExistingRepo.getFromRepo()))){
+                if (repoRepository.getRepoBankAccount(adjustmentExistingRepo.getToRepo()).equals(repoRepository.getRepoBankAccount(adjustmentExistingRepo.getFromRepo()))) {
                     //Create new cross adjustment;
                     String crossAdjustment = crossAdjustmentIMPL.saveNewCrossAdjustment();
                     //Save from repo adjustment into the database;
@@ -397,11 +370,11 @@ public class repoIMPL implements repoService{
                     return ResponseEntity.status(HttpStatus.OK).body(
                             new customAPIResponse<>(
                                     false,
-                                    "Transfer has been initiated successfully!",
+                                    "Transfer has been initiated successfully",
                                     null
                             )
                     );
-                }else {
+                } else {
                     //Create new cross adjustment;
                     String crossAdjustment = crossAdjustmentIMPL.saveNewCrossAdjustment();
 
@@ -441,143 +414,112 @@ public class repoIMPL implements repoService{
                     return ResponseEntity.status(HttpStatus.OK).body(
                             new customAPIResponse<>(
                                     false,
-                                    "Transfer has been initiated successfully!",
+                                    "Transfer has been initiated successfully",
                                     null
                             )
                     );
                 }
-            }else {
-                return ResponseEntity.status(HttpStatus.CONFLICT).body(
-                        new customAPIResponse<>(
-                                false,
-                                "Transferring value is higher than the closing balance of from Repo!",
-                                null
-                        )
-                );
+            } else {
+                throw new InsufficientBalanceException("Transferring value is higher than the closing balance of from Repo");
             }
-        }catch (Exception e){
-            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(
-                    new customAPIResponse<>(
-                            false,
-                            "Un-expected error occurred. Please contact administrator!",
-                            null
-                    )
-            );
         }
     }
 
     @Transactional
     @Override
+    @RequiresPermission("FUNC-036")
+    @LogActivity(methodDescription = "This method will delete a repo")
     public ResponseEntity<customAPIResponse<String>> repoDelete(String repoId) {
-        try{
+        //Check whether user provided repo id
+        if (repoId == null || repoId.isEmpty()) {
+            throw new RepoInputDataViolationException("Please provide all required data");
+        } else {
             //Check whether the repo is already deleted or not;
             int deleteStatus = repoRepository.isRepoDeleted(repoId);
-            if(deleteStatus == 0){
+            if (deleteStatus == 0) {
                 //Check whether the repo is already invested;
                 int investedStatus = repoRepository.isInvestedRepo(repoId);
-                if(investedStatus == 0){
+                if (investedStatus == 0) {
                     //Check whether the repo is previous day repo or same day repo;
                     int repoDateStatus = repoRepository.isRepoSameDate(repoId);
-                    if(repoDateStatus == 1){
+                    if (repoDateStatus == 1) {
                         //Check whether the repo has any active adjustments. If there is any adjustment, before delete the repo, the adjustment should be deleted;
                         int adjustmentCount = repoRepository.adjustmentCount(repoId);
-                        if(adjustmentCount == 0){
-                            int deleteRepo =  repoRepository.repoDelete(
+                        if (adjustmentCount == 0) {
+                            int deleteRepo = repoRepository.repoDelete(
                                     session.getAttribute("userId").toString(),
                                     repoId
                             );
-                            if(deleteRepo > 0){
+                            if (deleteRepo > 0) {
                                 return ResponseEntity.status(HttpStatus.OK).body(
                                         new customAPIResponse<>(
                                                 false,
-                                                "Repo Id " + repoId + " deleted successfully!",
+                                                "Repo Id " + repoId + " deleted successfully",
                                                 null
                                         )
                                 );
-                            }else {
-                                return ResponseEntity.status(HttpStatus.CONFLICT).body(
-                                        new customAPIResponse<>(
-                                                false,
-                                                "Un-expected error occurred. Please try again later!",
-                                                null
-                                        )
-                                );
+                            } else {
+                                throw new RepoDeletionFailureException("Couldn't delete repo. Please contact administrator");
                             }
-                        }else {
+                        } else {
                             return ResponseEntity.status(HttpStatus.CONFLICT).body(
                                     new customAPIResponse<>(
                                             false,
-                                            "This Repo ID has active adjustments. Please reverse all adjustments related for this Repo ID before delete!",
+                                            "This Repo ID has active adjustments. Please reverse all adjustments related for this Repo ID before delete",
                                             null
                                     )
                             );
                         }
-                    }else{
-                        return ResponseEntity.status(HttpStatus.CONFLICT).body(
+                    } else {
+                        return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(
                                 new customAPIResponse<>(
                                         false,
-                                        "You are not authorized to delete a previous day Repo!",
+                                        "You are not authorized to delete a previous day Repo",
                                         null
                                 )
                         );
                     }
-                }else {
-                    return ResponseEntity.status(HttpStatus.CONFLICT).body(
+                } else {
+                    return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(
                             new customAPIResponse<>(
                                     false,
-                                    "This Repo is already invested. If you need to delete, please reverse the investment first!",
+                                    "This Repo is already invested. If you need to delete, please reverse the investment first",
                                     null
                             )
                     );
                 }
-            }else {
+            } else {
                 return ResponseEntity.status(HttpStatus.CONFLICT).body(
                         new customAPIResponse<>(
                                 false,
-                                "This Repo Id is already deleted. No further deletion is required!",
+                                "This Repo Id is already deleted. No further deletion is required",
                                 null
                         )
                 );
             }
-        }catch (Exception e){
-            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(
-                    new customAPIResponse<>(
-                            false,
-                            "Un-expected error occurred while deleting the Repo. Please contact administrator!",
-                            null
-                    )
-            );
         }
     }
 
     @Override
+    @RequiresPermission("FUNC-037")
+    @LogActivity(methodDescription = "This method will display repo details for investment purpose")
     public ResponseEntity<customAPIResponse<List<repoDetailsForInvestmentsDTO>>> repoDetailsForInvestments() {
-        try{
-            String Sql = "SELECT DATE(rpo.created_date) AS 'Repo_Date', rpo.repo_id, acc.account_number, CASE rpo.repo_type WHEN 1 THEN 'PAR' WHEN 2 THEN 'NON-PAR' WHEN 3 THEN 'TR' WHEN 4 THEN 'EXCESS' ELSE 'UNKNOWN' END AS Repo_Type, rpo.repo_value + COALESCE((SELECT SUM(rpoadj.adjustment_amount) FROM repo_adjustment rpoadj LEFT JOIN cross_adjustment crsadj ON rpoadj.cross_adjustment_id = crsadj.cross_adjustment_id WHERE rpoadj.adjusted_repo = rpo.repo_id AND (crsadj.is_reversed = 0 OR crsadj.cross_adjustment_id IS NULL)), 0) AS Investment_Value FROM repos rpo\n" +
-                    "LEFT JOIN bank_account acc ON acc.account_id = rpo.bank_account WHERE DATE(rpo.created_date) = CURRENT_DATE AND rpo.is_deleted = 0 AND rpo.is_invested = 0 GROUP BY rpo.repo_id, acc.account_number, rpo.repo_type, rpo.repo_value";
-            List<repoDetailsForInvestmentsDTO> repoDetailsList = template.query(Sql, new repoDetailsForInvestmentsMapper());
-            if(!repoDetailsList.isEmpty()){
-                return ResponseEntity.status(HttpStatus.OK).body(
-                        new customAPIResponse<>(
-                                true,
-                                null,
-                                repoDetailsList
-                        )
-                );
-            }else {
-                return ResponseEntity.status(HttpStatus.CONFLICT).body(
-                        new customAPIResponse<>(
-                                false,
-                                "No Repo details available to display!",
-                                null
-                        )
-                );
-            }
-        }catch (Exception e){
-            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(
+        String Sql = "SELECT DATE(rpo.created_date) AS 'Repo_Date', rpo.repo_id, acc.account_number, CASE rpo.repo_type WHEN 1 THEN 'PAR' WHEN 2 THEN 'NON-PAR' WHEN 3 THEN 'TR' WHEN 4 THEN 'EXCESS' ELSE 'UNKNOWN' END AS Repo_Type, rpo.repo_value + COALESCE((SELECT SUM(rpoadj.adjustment_amount) FROM repo_adjustment rpoadj LEFT JOIN cross_adjustment crsadj ON rpoadj.cross_adjustment_id = crsadj.cross_adjustment_id WHERE rpoadj.adjusted_repo = rpo.repo_id AND (crsadj.is_reversed = 0 OR crsadj.cross_adjustment_id IS NULL)), 0) AS Investment_Value FROM repos rpo\n" +
+                "LEFT JOIN bank_account acc ON acc.account_id = rpo.bank_account WHERE DATE(rpo.created_date) = CURRENT_DATE AND rpo.is_deleted = 0 AND rpo.is_invested = 0 GROUP BY rpo.repo_id, acc.account_number, rpo.repo_type, rpo.repo_value";
+        List<repoDetailsForInvestmentsDTO> repoDetailsList = template.query(Sql, new repoDetailsForInvestmentsMapper());
+        if (!repoDetailsList.isEmpty()) {
+            return ResponseEntity.status(HttpStatus.OK).body(
+                    new customAPIResponse<>(
+                            true,
+                            null,
+                            repoDetailsList
+                    )
+            );
+        } else {
+            return ResponseEntity.status(HttpStatus.NOT_FOUND).body(
                     new customAPIResponse<>(
                             false,
-                            "Un-expected error occurred while getting Repo details. Please contact administrator!",
+                            "No Repo details available to display",
                             null
                     )
             );
@@ -586,66 +528,50 @@ public class repoIMPL implements repoService{
 
     @Transactional
     @Override
-    public ResponseEntity<customAPIResponse<String>> initiateInvestment(String repoId, LocalDate toDate, String rate, int method, BigDecimal maturityValue) {
-        try{
+    @RequiresPermission("FUNC-037")
+    @LogActivity(methodDescription = "This method will invest repo balances")
+    public ResponseEntity<customAPIResponse<String>> initiateInvestment(String repoId, LocalDate toDate, String rate, Integer method, BigDecimal maturityValue) {
+        // Check whether user provided all required data
+        if (repoId == null || repoId.isEmpty() || toDate == null || rate == null || rate.isEmpty() || method == null || maturityValue == null) {
+            throw new RepoInputDataViolationException("Please provide all required data");
+        } else {
             maturityValue = new BigDecimal(String.valueOf(maturityValue));
             int affectedRows = repoRepository.investRepo(rate, toDate, method, maturityValue, repoId);
-            if(affectedRows > 0){
+            if (affectedRows > 0) {
                 return ResponseEntity.status(HttpStatus.OK).body(
                         new customAPIResponse<>(
                                 true,
-                                "Repo invested successfully!",
+                                "Repo invested successfully",
                                 null
                         )
                 );
-            }else {
-                return ResponseEntity.status(HttpStatus.CONFLICT).body(
-                        new customAPIResponse<>(
-                                false,
-                                "Un-expected error occurred",
-                                null
-                        )
-                );
+            } else {
+                throw new RepoInvestmentFailureException("Couldn't invest selected repo. Please contact administrator");
             }
-        }catch (Exception e){
-            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(
-                    new customAPIResponse<>(
-                            false,
-                            "Un-expected error occurred. Please contact administrator!",
-                            null
-                    )
-            );
         }
     }
 
     @Override
+    @RequiresPermission("FUNC-038")
+    @LogActivity(methodDescription = "This method will display repo details for investment reversal purpose")
     public ResponseEntity<customAPIResponse<List<repoDetailsForInvestmentsDTO>>> repoDetailsForInvestmentReverse() {
-        try{
-            String Sql = "SELECT DATE(rpo.created_date) AS 'Repo_Date', rpo.repo_id, acc.account_number, CASE rpo.repo_type WHEN 1 THEN 'PAR' WHEN 2 THEN 'NON-PAR' WHEN 3 THEN 'TR' WHEN 4 THEN 'EXCESS' ELSE 'UNKNOWN' END AS Repo_Type, rpo.repo_value + COALESCE((SELECT SUM(rpoadj.adjustment_amount) FROM repo_adjustment rpoadj LEFT JOIN cross_adjustment crsadj ON rpoadj.cross_adjustment_id = crsadj.cross_adjustment_id WHERE rpoadj.adjusted_repo = rpo.repo_id AND (crsadj.is_reversed = 0 OR crsadj.cross_adjustment_id IS NULL)), 0) AS Investment_Value FROM repos rpo\n" +
-                    "LEFT JOIN bank_account acc ON acc.account_id = rpo.bank_account WHERE DATE(rpo.created_date) = CURRENT_DATE AND rpo.is_deleted = 0 AND rpo.is_invested = 1 GROUP BY rpo.repo_id, acc.account_number, rpo.repo_type, rpo.repo_value";
-            List<repoDetailsForInvestmentsDTO> repoDetailsList = template.query(Sql, new repoDetailsForInvestmentsMapper());
-            if(!repoDetailsList.isEmpty()){
-                return ResponseEntity.status(HttpStatus.OK).body(
-                        new customAPIResponse<>(
-                                true,
-                                null,
-                                repoDetailsList
-                        )
-                );
-            }else {
-                return ResponseEntity.status(HttpStatus.CONFLICT).body(
-                        new customAPIResponse<>(
-                                false,
-                                "No Invested Repo details available to display!",
-                                null
-                        )
-                );
-            }
-        }catch (Exception e){
-            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(
+
+        String Sql = "SELECT DATE(rpo.created_date) AS 'Repo_Date', rpo.repo_id, acc.account_number, CASE rpo.repo_type WHEN 1 THEN 'PAR' WHEN 2 THEN 'NON-PAR' WHEN 3 THEN 'TR' WHEN 4 THEN 'EXCESS' ELSE 'UNKNOWN' END AS Repo_Type, rpo.repo_value + COALESCE((SELECT SUM(rpoadj.adjustment_amount) FROM repo_adjustment rpoadj LEFT JOIN cross_adjustment crsadj ON rpoadj.cross_adjustment_id = crsadj.cross_adjustment_id WHERE rpoadj.adjusted_repo = rpo.repo_id AND (crsadj.is_reversed = 0 OR crsadj.cross_adjustment_id IS NULL)), 0) AS Investment_Value FROM repos rpo\n" +
+                "LEFT JOIN bank_account acc ON acc.account_id = rpo.bank_account WHERE DATE(rpo.created_date) = CURRENT_DATE AND rpo.is_deleted = 0 AND rpo.is_invested = 1 GROUP BY rpo.repo_id, acc.account_number, rpo.repo_type, rpo.repo_value";
+        List<repoDetailsForInvestmentsDTO> repoDetailsList = template.query(Sql, new repoDetailsForInvestmentsMapper());
+        if (!repoDetailsList.isEmpty()) {
+            return ResponseEntity.status(HttpStatus.OK).body(
+                    new customAPIResponse<>(
+                            true,
+                            null,
+                            repoDetailsList
+                    )
+            );
+        } else {
+            return ResponseEntity.status(HttpStatus.NOT_FOUND).body(
                     new customAPIResponse<>(
                             false,
-                            "Un-expected error occurred while getting Repo details. Please contact administrator!",
+                            "No Invested Repo details available to display",
                             null
                     )
             );
@@ -654,45 +580,35 @@ public class repoIMPL implements repoService{
 
     @Transactional
     @Override
+    @RequiresPermission("FUNC-038")
+    @LogActivity(methodDescription = "This method will reverse invested repo balances")
     public ResponseEntity<customAPIResponse<String>> investmentReverse(String repoId) {
-        try{
+        // Check whether user provided repo id
+        if (repoId == null || repoId.isEmpty()) {
+            throw new RepoInputDataViolationException("Please provide valid repo id");
+        } else {
             int affectedRows = repoRepository.reverseInvestment(repoId);
-            if(affectedRows > 0){
+            if (affectedRows > 0) {
                 return ResponseEntity.status(HttpStatus.OK).body(
                         new customAPIResponse<>(
                                 true,
-                                "Investment reversed successfully!",
+                                "Investment reversed successfully",
                                 null
                         )
                 );
-            }else {
-                return ResponseEntity.status(HttpStatus.CONFLICT).body(
-                        new customAPIResponse<>(
-                                false,
-                                "Un-expected error occurred",
-                                null
-                        )
-                );
+            } else {
+                throw new RepoInvestmentReversalFailureException("Couldn't reverse the investment. Please contact administrator");
             }
-        }catch (Exception e){
-            System.out.println(e.getMessage());
-            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(
-                    new customAPIResponse<>(
-                            false,
-                            "Un-expected error occurred while reversing the investment. Please contact administrator!",
-                            null
-                    )
-            );
         }
     }
 
     @Override
     public ResponseEntity<customAPIResponse<List<repoDetailsForInvestmentsDTO>>> repoDetailsForPrint() {
-        try{
+        try {
             String Sql = "SELECT DATE(rpo.created_date) AS 'Repo_Date', rpo.repo_id, acc.account_number, CASE rpo.repo_type WHEN 1 THEN 'PAR' WHEN 2 THEN 'NON-PAR' WHEN 3 THEN 'TR' WHEN 4 THEN 'EXCESS' ELSE 'UNKNOWN' END AS Repo_Type, rpo.repo_value + COALESCE((SELECT SUM(rpoadj.adjustment_amount) FROM repo_adjustment rpoadj LEFT JOIN cross_adjustment crsadj ON rpoadj.cross_adjustment_id = crsadj.cross_adjustment_id WHERE rpoadj.adjusted_repo = rpo.repo_id AND (crsadj.is_reversed = 0 OR crsadj.cross_adjustment_id IS NULL)), 0) AS Investment_Value FROM repos rpo\n" +
                     "LEFT JOIN bank_account acc ON acc.account_id = rpo.bank_account WHERE DATE(rpo.created_date) = CURRENT_DATE AND rpo.is_deleted = 0 AND rpo.is_invested = 1 GROUP BY rpo.repo_id, acc.account_number, rpo.repo_type, rpo.repo_value";
             List<repoDetailsForInvestmentsDTO> repoDetailsList = template.query(Sql, new repoDetailsForInvestmentsMapper());
-            if(!repoDetailsList.isEmpty()){
+            if (!repoDetailsList.isEmpty()) {
                 return ResponseEntity.status(HttpStatus.OK).body(
                         new customAPIResponse<>(
                                 true,
@@ -700,7 +616,7 @@ public class repoIMPL implements repoService{
                                 repoDetailsList
                         )
                 );
-            }else {
+            } else {
                 return ResponseEntity.status(HttpStatus.CONFLICT).body(
                         new customAPIResponse<>(
                                 false,
@@ -709,7 +625,7 @@ public class repoIMPL implements repoService{
                         )
                 );
             }
-        }catch (Exception e){
+        } catch (Exception e) {
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(
                     new customAPIResponse<>(
                             false,
@@ -722,7 +638,7 @@ public class repoIMPL implements repoService{
 
     @Override
     public ResponseEntity<customAPIResponse<List<getRepoOpeningBalancesDTO>>> getRepoOpeningBalances(LocalDate repoDate) {
-        try{
+        try {
             String sql = "SELECT rpo.repo_id, rpo.repo_value, acc.account_number FROM repos rpo LEFT JOIN bank_account acc ON acc.account_id = rpo.bank_account WHERE DATE(rpo.created_date) = ? AND rpo.repo_value > 0 AND rpo.repo_type = '4' AND rpo.is_deleted = 0 AND rpo.is_invested = 1";
             List<getRepoOpeningBalancesDTO> openingBalanceList = template.query(sql, new getRepoOpeningBalancesMapper(), repoDate);
             return ResponseEntity.status(HttpStatus.OK).body(
@@ -732,7 +648,7 @@ public class repoIMPL implements repoService{
                             openingBalanceList
                     )
             );
-        }catch (Exception e){
+        } catch (Exception e) {
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(
                     new customAPIResponse<>(
                             false,
@@ -745,7 +661,7 @@ public class repoIMPL implements repoService{
 
     @Override
     public ResponseEntity<customAPIResponse<List<getRepoClosingBalancesDTO>>> getRepoClosingBalances(LocalDate repoDate) {
-        try{
+        try {
             String Sql = "SELECT rpo.repo_id, acc.account_number, CASE rpo.repo_type WHEN 1 THEN 'PAR' WHEN 2 THEN 'NON-PAR' WHEN 3 THEN 'TR' WHEN 4 THEN 'EXCESS' ELSE 'UNKNOWN' END AS Repo_Type, rpo.repo_value + COALESCE((SELECT SUM(rpoadj.adjustment_amount) FROM repo_adjustment rpoadj LEFT JOIN cross_adjustment crsadj ON rpoadj.cross_adjustment_id = crsadj.cross_adjustment_id WHERE rpoadj.adjusted_repo = rpo.repo_id AND (crsadj.is_reversed = 0 OR crsadj.cross_adjustment_id IS NULL)), 0) AS Investment_Value FROM repos rpo LEFT JOIN bank_account acc ON acc.account_id = rpo.bank_account WHERE DATE(rpo.created_date) = ? AND rpo.is_deleted = 0 AND rpo.is_invested = 1 AND rpo.repo_type = '4' GROUP BY rpo.repo_id, acc.account_number, rpo.repo_type, rpo.repo_value";
             List<getRepoClosingBalancesDTO> repoList = template.query(Sql, new getRepoClosingBalancesMapper(), repoDate);
             return ResponseEntity.status(HttpStatus.OK).body(
@@ -755,7 +671,7 @@ public class repoIMPL implements repoService{
                             repoList
                     )
             );
-        }catch (Exception e){
+        } catch (Exception e) {
             return ResponseEntity.status(HttpStatus.OK).body(
                     new customAPIResponse<>(
                             true,
@@ -768,10 +684,10 @@ public class repoIMPL implements repoService{
 
     @Override
     public ResponseEntity<customAPIResponse<List<getRepoAccountsListDTO>>> getRepoAccountsList() {
-        try{
+        try {
             String Sql = "SELECT rpo.repo_id AS 'Repo ID', CASE WHEN rpo.repo_type = 1 THEN 'PAR' WHEN rpo.repo_type = 2 THEN 'NON-PAR' WHEN rpo.repo_type = 3 THEN 'TR' WHEN rpo.repo_type = 4 THEN 'EXCESS' END AS 'Repo Type', acc.account_number AS 'Account Number' FROM repos rpo LEFT JOIN bank_account acc ON acc.account_id = rpo.bank_account WHERE rpo.is_deleted = 0 AND rpo.is_invested = 0 AND DATE(rpo.created_date) = ?";
             List<getRepoAccountsListDTO> repoList = template.query(Sql, new getRepoAccountsListMapper(), LocalDate.now());
-            if(!repoList.isEmpty()){
+            if (!repoList.isEmpty()) {
                 return ResponseEntity.status(HttpStatus.OK).body(
                         new customAPIResponse<>(
                                 true,
@@ -779,7 +695,7 @@ public class repoIMPL implements repoService{
                                 repoList
                         )
                 );
-            }else {
+            } else {
                 return ResponseEntity.status(HttpStatus.CONFLICT).body(
                         new customAPIResponse<>(
                                 true,
@@ -788,7 +704,7 @@ public class repoIMPL implements repoService{
                         )
                 );
             }
-        }catch (Exception e){
+        } catch (Exception e) {
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(
                     new customAPIResponse<>(
                             false,

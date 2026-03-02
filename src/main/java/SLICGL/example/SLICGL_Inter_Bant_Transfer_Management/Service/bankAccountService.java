@@ -11,6 +11,7 @@ public interface bankAccountService {
     public ResponseEntity<customAPIResponse<searchAccountDTO>> searchAccountDetails(String accountId);
     public ResponseEntity<customAPIResponse<searchAccountUpdateDTO>> searchAccountDetailsForUpdate(String accountId);
     public ResponseEntity<customAPIResponse<String>> updateAccount(accountUpdateDTO updateAccount);
+    public ResponseEntity<customAPIResponse<searchAccountUpdateDTO>> searchAccountDetailsForDelete(String accountId);
     public ResponseEntity<customAPIResponse<String>> deleteAccount(String accountId);
     public ResponseEntity<customAPIResponse<List<getBankAccountsForFundRequestDTO>>> getBankAccountsForFundRequest();
     public ResponseEntity<customAPIResponse<Boolean>> checkBankAccountForNewRepo(String toRepo, String fromRepoId);

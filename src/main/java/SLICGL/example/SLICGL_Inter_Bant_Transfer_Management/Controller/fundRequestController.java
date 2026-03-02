@@ -25,12 +25,12 @@ public class fundRequestController {
     }
 
     @GetMapping(value = "/get-fundRequest-details")
-    public ResponseEntity<customAPIResponse<List<getFundRequestDetailsDTO>>> requestDetails(@RequestParam LocalDate requiredDate, @RequestParam int requestType){
+    public ResponseEntity<customAPIResponse<List<getFundRequestDetailsDTO>>> requestDetails(@RequestParam LocalDate requiredDate, @RequestParam String requestType){
         return fundRequestService.requestDetails(requiredDate, requestType);
     }
 
     @GetMapping(value = "/fundRequest-update")
-    public ResponseEntity<customAPIResponse<searchRequestForUpdateDTO>> searchRequestForUpdate(@RequestParam String requestId, @RequestParam int requestType){
+    public ResponseEntity<customAPIResponse<searchRequestForUpdateDTO>> searchRequestForUpdate(@RequestParam String requestId, @RequestParam String requestType){
         return fundRequestService.searchRequestForUpdate(requestId, requestType);
     }
 
@@ -40,12 +40,12 @@ public class fundRequestController {
     }
 
     @GetMapping(value = "/delete-request")
-    public ResponseEntity<customAPIResponse<fundRequestDeleteDTO>> deleteFundRequest(@RequestParam String requestId, @RequestParam int requestType){
+    public ResponseEntity<customAPIResponse<fundRequestDeleteDTO>> deleteFundRequest(@RequestParam String requestId, @RequestParam Integer requestType){
         return fundRequestService.deleteFundRequest(requestId, requestType);
     }
 
     @PutMapping(value = "/save-requestDelete")
-    public ResponseEntity<customAPIResponse<String>> saveDeleteFundRequest(@RequestParam String requestId, @RequestParam int requestType){
+    public ResponseEntity<customAPIResponse<String>> saveDeleteFundRequest(@RequestParam String requestId, @RequestParam Integer requestType){
         return fundRequestService.saveDeleteFundRequest(requestId, requestType);
     }
 

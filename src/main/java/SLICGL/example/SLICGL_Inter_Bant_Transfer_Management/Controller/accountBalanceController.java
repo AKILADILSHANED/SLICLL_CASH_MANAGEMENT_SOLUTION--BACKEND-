@@ -23,7 +23,7 @@ public class accountBalanceController {
     }
 
     @PostMapping(value = "/save-balance")
-    public ResponseEntity<customAPIResponse<String>> saveBalance(@RequestParam String accountId, @RequestParam float balanceAmount){
+    public ResponseEntity<customAPIResponse<String>> saveBalance(@RequestParam String accountId, @RequestParam Float balanceAmount){
         return accountBalanceService.saveBalance(accountId, balanceAmount);
     }
 

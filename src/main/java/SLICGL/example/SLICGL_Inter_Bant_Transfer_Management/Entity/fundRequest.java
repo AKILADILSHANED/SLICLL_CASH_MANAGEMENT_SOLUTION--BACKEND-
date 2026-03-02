@@ -2,6 +2,7 @@ package SLICGL.example.SLICGL_Inter_Bant_Transfer_Management.Entity;
 
 import jakarta.persistence.*;
 
+import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 
@@ -13,7 +14,7 @@ public class fundRequest {
     @Column(name = "request_id", length = 14, nullable = false)
     private String requestId;
     @Column(name = "request_amount", length = 10, nullable = false)
-    private float requestAmount;
+    private BigDecimal requestAmount;
     @Column(name = "request_date", length = 30, nullable = false)
     private LocalDateTime requestDate;
     @Column(name = "required_date", length = 10, nullable = false)
@@ -41,7 +42,7 @@ public class fundRequest {
     public fundRequest() {
     }
 
-    public fundRequest(String requestId, float requestAmount, LocalDateTime requestDate, LocalDate requiredDate, int deleteStatus, User deleted_by, int approveStatus, User approvedBy, User requestedBy, payment payment, bankAccount bankAccount) {
+    public fundRequest(String requestId, BigDecimal requestAmount, LocalDateTime requestDate, LocalDate requiredDate, int deleteStatus, User deleted_by, int approveStatus, User approvedBy, User requestedBy, payment payment, bankAccount bankAccount) {
         this.requestId = requestId;
         this.requestAmount = requestAmount;
         this.requestDate = requestDate;
@@ -63,11 +64,11 @@ public class fundRequest {
         this.requestId = requestId;
     }
 
-    public float getRequestAmount() {
+    public BigDecimal getRequestAmount() {
         return requestAmount;
     }
 
-    public void setRequestAmount(float requestAmount) {
+    public void setRequestAmount(BigDecimal requestAmount) {
         this.requestAmount = requestAmount;
     }
 
@@ -142,5 +143,4 @@ public class fundRequest {
     public void setBankAccount(bankAccount bankAccount) {
         this.bankAccount = bankAccount;
     }
-
 }

@@ -6,6 +6,7 @@ import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.stereotype.Repository;
 
+import java.math.BigDecimal;
 import java.time.LocalDate;
 
 @Repository
@@ -19,7 +20,7 @@ public interface forecastRequestRepo extends JpaRepository<forecastRequest, Stri
 
     @Modifying
     @Query(value = "UPDATE forecast_request SET bank_account = ?1, request_amount = ?2, payment = ?3 WHERE request_id = ?4", nativeQuery = true)
-    public int updateForecastRequest(String accountId, float requestAmount, String payment, String requestId);
+    public int updateForecastRequest(String accountId, BigDecimal requestAmount, String payment, String requestId);
 
     @Modifying
     @Query(value = "UPDATE forecast_request SET delete_status = 1, deleted_by = ?1 WHERE request_id = ?2", nativeQuery = true)

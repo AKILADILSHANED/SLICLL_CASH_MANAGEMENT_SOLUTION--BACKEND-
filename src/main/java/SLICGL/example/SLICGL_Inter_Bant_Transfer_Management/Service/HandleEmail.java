@@ -25,7 +25,7 @@ public class HandleEmail {
                     + "Temporary Password: " + tempPassword + "\n\n"
                     + "Please login and reset your password immediately.\n\n"
                     + "Best regards,\n"
-                    + "Sri Lanka Insurance Corporation General Limited";
+                    + "Sri Lanka Insurance Corporation Life Limited";
 
             message.setText(emailBody);
             mailSender.send(message);
@@ -49,7 +49,7 @@ public class HandleEmail {
                     + "Temporary Password: " + tempPassword + "\n\n"
                     + "Please login and reset your password immediately.\n\n"
                     + "Best regards,\n"
-                    + "Sri Lanka Insurance Corporation General Limited";
+                    + "Sri Lanka Insurance Corporation Life Limited";
 
             message.setText(emailBody);
             mailSender.send(message);

@@ -1,10 +1,11 @@
 package SLICGL.example.SLICGL_Inter_Bant_Transfer_Management.DTO;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import org.springframework.web.multipart.MultipartFile;
 
 public class userRegisterDTO {
     private String userTitle;
-    private int userLevel;
+    private Integer userLevel;
     private String userFirstName;
     private String userLastName;
     private String department;
@@ -12,12 +13,13 @@ public class userRegisterDTO {
     private String userPosition;
     private String userEmail;
     private String userEpf;
+    @JsonIgnore
     private MultipartFile userSignature;
 
     public userRegisterDTO() {
     }
 
-    public userRegisterDTO(String userTitle, int userLevel, String userFirstName, String userLastName, String department, String section, String userPosition, String userEmail, String userEpf, MultipartFile userSignature) {
+    public userRegisterDTO(String userTitle, Integer userLevel, String userFirstName, String userLastName, String department, String section, String userPosition, String userEmail, String userEpf, MultipartFile userSignature) {
         this.userTitle = userTitle;
         this.userLevel = userLevel;
         this.userFirstName = userFirstName;
@@ -38,11 +40,11 @@ public class userRegisterDTO {
         this.userTitle = userTitle;
     }
 
-    public int getUserLevel() {
+    public Integer getUserLevel() {
         return userLevel;
     }
 
-    public void setUserLevel(int userLevel) {
+    public void setUserLevel(Integer userLevel) {
         this.userLevel = userLevel;
     }
 

@@ -1,18 +1,19 @@
 package SLICGL.example.SLICGL_Inter_Bant_Transfer_Management.DTO;
 
+import java.math.BigDecimal;
 import java.time.LocalDate;
 
 public class newFundRequestDTO {
     private String accountId;
     private String paymentId;
-    private float requestAmount;
-    private int requestType; // 0 = Actual Fund Request && 1 = Forecasted Fund Request
+    private BigDecimal requestAmount;
+    private Integer requestType; // 0 = Actual Fund Request && 1 = Forecasted Fund Request
     private LocalDate requiredDate;
 
     public newFundRequestDTO() {
     }
 
-    public newFundRequestDTO(String accountId, String paymentId, float requestAmount, int requestType, LocalDate requiredDate) {
+    public newFundRequestDTO(String accountId, String paymentId, BigDecimal requestAmount, Integer requestType, LocalDate requiredDate) {
         this.accountId = accountId;
         this.paymentId = paymentId;
         this.requestAmount = requestAmount;
@@ -36,19 +37,19 @@ public class newFundRequestDTO {
         this.paymentId = paymentId;
     }
 
-    public float getRequestAmount() {
+    public BigDecimal getRequestAmount() {
         return requestAmount;
     }
 
-    public void setRequestAmount(float requestAmount) {
+    public void setRequestAmount(BigDecimal requestAmount) {
         this.requestAmount = requestAmount;
     }
 
-    public int getRequestType() {
+    public Integer getRequestType() {
         return requestType;
     }
 
-    public void setRequestType(int requestType) {
+    public void setRequestType(Integer requestType) {
         this.requestType = requestType;
     }
 

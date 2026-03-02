@@ -5,15 +5,15 @@ public class accountUpdateDTO {
     private String accountId;
     private String bank;
     private String bankBranch;
-    private int accountType; // 1 = Current Account, 2 = Saving Account;
+    private Integer accountType; // 1 = Current Account, 2 = Saving Account;
     private String currency;
-    private int glCode;
+    private Integer glCode;
     private String accountNumber;
 
     public accountUpdateDTO() {
     }
 
-    public accountUpdateDTO(String accountId, String bank, String bankBranch, int accountType, String currency, int glCode, String accountNumber) {
+    public accountUpdateDTO(String accountId, String bank, String bankBranch, Integer accountType, String currency, Integer glCode, String accountNumber) {
         this.accountId = accountId;
         this.bank = bank;
         this.bankBranch = bankBranch;
@@ -47,11 +47,11 @@ public class accountUpdateDTO {
         this.bankBranch = bankBranch;
     }
 
-    public int getAccountType() {
+    public Integer getAccountType() {
         return accountType;
     }
 
-    public void setAccountType(int accountType) {
+    public void setAccountType(Integer accountType) {
         this.accountType = accountType;
     }
 
@@ -63,11 +63,11 @@ public class accountUpdateDTO {
         this.currency = currency;
     }
 
-    public int getGlCode() {
+    public Integer getGlCode() {
         return glCode;
     }
 
-    public void setGlCode(int glCode) {
+    public void setGlCode(Integer glCode) {
         this.glCode = glCode;
     }
 

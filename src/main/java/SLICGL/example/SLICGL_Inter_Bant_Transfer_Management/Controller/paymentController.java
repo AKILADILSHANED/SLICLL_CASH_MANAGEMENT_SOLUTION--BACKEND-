@@ -28,9 +28,19 @@ public class paymentController {
         return paymentService.searchPayment(paymentId);
     }
 
+    @GetMapping(value = "/payment-search-for-update")
+    public ResponseEntity<customAPIResponse<paymentSearchDTO>> searchPaymentForUpdate(@RequestParam String paymentId){
+        return paymentService.searchPaymentForUpdate(paymentId);
+    }
+
     @PutMapping(value = "/payment-update")
     public ResponseEntity<customAPIResponse<String>> updatePayment(@RequestParam String paymentType, @RequestParam String paymentId){
         return paymentService.updatePayment(paymentType, paymentId);
+    }
+
+    @GetMapping(value = "/payment-search-for-delete")
+    public ResponseEntity<customAPIResponse<paymentSearchDTO>> searchPaymentForDelete(@RequestParam String paymentId){
+        return paymentService.searchPaymentForDelete(paymentId);
     }
 
     @PutMapping(value = "/payment-delete")

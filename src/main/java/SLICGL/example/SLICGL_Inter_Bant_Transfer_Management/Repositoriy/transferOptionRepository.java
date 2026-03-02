@@ -31,4 +31,7 @@ public interface transferOptionRepository extends JpaRepository<transferOption, 
     @Query(value = "SELECT EXISTS(SELECT 1 FROM transfer_option WHERE from_account = ?1 AND to_account = ?2 AND transfer_channel = ?3 AND is_deleted = 0 AND is_active = 1)", nativeQuery = true)
     public int optionIsAvailable(String fromAccount, String toAccount, String channel);
 
+    @Query(value = "SELECT COUNT(optn.option_ID) FROM transfer_option optn WHERE optn.is_deleted = 0 AND optn.to_account = ?1 OR optn.from_account = ?2", nativeQuery = true)
+    public int getOptionCount(String toAccount, String fromAccount);
+
 }
