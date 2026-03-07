@@ -15,8 +15,9 @@ public class searchChannelForRemoveMapper implements RowMapper<channelSearchForR
                 rs.getString(2),
                 rs.getString(3),
                 rs.getInt(4),
-                rs.getObject(5, LocalDateTime.class),
-                rs.getString(6)
+                rs.getInt(5),
+                rs.getObject(6, LocalDateTime.class),
+                rs.getString(7)
         );
     }
 }

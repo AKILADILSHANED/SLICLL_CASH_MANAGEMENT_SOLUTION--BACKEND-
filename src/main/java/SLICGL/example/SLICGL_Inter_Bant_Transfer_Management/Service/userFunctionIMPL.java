@@ -3,6 +3,11 @@ package SLICGL.example.SLICGL_Inter_Bant_Transfer_Management.Service;
 import SLICGL.example.SLICGL_Inter_Bant_Transfer_Management.APIResponse.customAPIResponse;
 import SLICGL.example.SLICGL_Inter_Bant_Transfer_Management.DTO.grantFunctionDTO;
 import SLICGL.example.SLICGL_Inter_Bant_Transfer_Management.DTO.revokeFunctionDTO;
+import SLICGL.example.SLICGL_Inter_Bant_Transfer_Management.ExceptionHandlers.AuthorityExceptions.AuthorityGrantingFailureException;
+import SLICGL.example.SLICGL_Inter_Bant_Transfer_Management.ExceptionHandlers.AuthorityExceptions.AuthorityInputDataViolationException;
+import SLICGL.example.SLICGL_Inter_Bant_Transfer_Management.ExceptionHandlers.AuthorityExceptions.AuthorityRevokingFailureException;
+import SLICGL.example.SLICGL_Inter_Bant_Transfer_Management.Logs.LogActivity;
+import SLICGL.example.SLICGL_Inter_Bant_Transfer_Management.Security.RequiresPermission;
 import jakarta.transaction.Transactional;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
@@ -11,14 +16,19 @@ import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.stereotype.Service;
 
 @Service
-public class userFunctionIMPL implements userFunctionService{
+public class userFunctionIMPL implements userFunctionService {
     @Autowired
     JdbcTemplate template;
 
     @Override
     @Transactional
-    public ResponseEntity<customAPIResponse<String>> grantFunction(grantFunctionDTO grantFunctionDTO){
-        try{
+    @RequiresPermission("FUNC-059")
+    @LogActivity(methodDescription = "This method fill grant authorities for user functions")
+    public ResponseEntity<customAPIResponse<String>> grantFunction(grantFunctionDTO grantFunctionDTO) {
+        //Check whether user provided all required data
+        if (grantFunctionDTO.getUserId() == null || grantFunctionDTO.getUserId().isEmpty() || grantFunctionDTO.getFunctionId() == null || grantFunctionDTO.getFunctionId().isEmpty()) {
+            throw new AuthorityInputDataViolationException("Please provide required data");
+        } else {
             String sql = "INSERT INTO user_function (user_id, function_id) VALUES (?, ?)";
             int rows = template.update(sql, grantFunctionDTO.getUserId(), grantFunctionDTO.getFunctionId());
             if (rows > 0) {
@@ -30,29 +40,19 @@ public class userFunctionIMPL implements userFunctionService{
                         )
                 );
             } else {
-                return ResponseEntity.status(HttpStatus.CONFLICT).body(
-                        new customAPIResponse<>(
-                                false,
-                                "Unable to grant the function. Please contact administrator!",
-                                null
-                        )
-                );
+                throw new AuthorityGrantingFailureException("Unable to grant authority. Please contact administrator");
             }
-        }catch (Exception e){
-            System.out.println(e.getMessage());
-            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(
-                    new customAPIResponse<>(
-                            false,
-                            "Un-expected error occurred while granting the function. Please contact administrator!",
-                            null
-                    )
-            );
         }
     }
 
     @Override
+    @RequiresPermission("FUNC-060")
+    @LogActivity(methodDescription = "This method fill revoke authorities for user functions")
     public ResponseEntity<customAPIResponse<String>> revokeFunction(revokeFunctionDTO revokeFunctionDTO) {
-        try{
+        //Check whether user provided all required data
+        if (revokeFunctionDTO.getUserId() == null || revokeFunctionDTO.getUserId().isEmpty() || revokeFunctionDTO.getFunctionId() == null || revokeFunctionDTO.getFunctionId().isEmpty()) {
+            throw new AuthorityInputDataViolationException("Please provide required data");
+        } else {
             String sql = "DELETE FROM user_function WHERE user_id = ? AND function_id = ?";
             int rows = template.update(sql, revokeFunctionDTO.getUserId(), revokeFunctionDTO.getFunctionId());
             if (rows > 0) {
@@ -64,23 +64,8 @@ public class userFunctionIMPL implements userFunctionService{
                         )
                 );
             } else {
-                return ResponseEntity.status(HttpStatus.CONFLICT).body(
-                        new customAPIResponse<>(
-                                false,
-                                "Unable to revoke the function. Please contact administrator!",
-                                null
-                        )
-                );
+                throw new AuthorityRevokingFailureException("Unable to revoke authority. Please contact administrator");
             }
-        }catch (Exception e){
-            System.out.println(e.getMessage());
-            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(
-                    new customAPIResponse<>(
-                            false,
-                            "Un-expected error occurred while revoking the function. Please contact administrator!",
-                            null
-                    )
-            );
         }
     }
 }

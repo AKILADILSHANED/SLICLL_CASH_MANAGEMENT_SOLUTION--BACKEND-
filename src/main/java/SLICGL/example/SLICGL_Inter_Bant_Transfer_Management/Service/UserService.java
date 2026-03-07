@@ -10,13 +10,24 @@ import java.util.List;
 
 public interface UserService {
     public ResponseEntity<customAPIResponse<userLoginResponseDTO>> userLogin(userLoginDTO login);
+
     public ResponseEntity<customAPIResponse<String>> userRegister(userRegisterDTO userRegister);
+
     public ResponseEntity<customAPIResponse<searchUserDTO>> searchUser(String userId);
+
     public ResponseEntity<customAPIResponse<searchUserDTO>> searchUserForUpdate(String userId);
+
     public ResponseEntity<customAPIResponse<updateUserDTO>> updateUser(updateUserDTO updatedUser);
+
     public ResponseEntity<customAPIResponse<searchUserDTO>> searchUserForDelete(String userId);
+
     public ResponseEntity<customAPIResponse<String>> deleteUser(String userId);
+
     public ResponseEntity<customAPIResponse<String>> passwordReset(userPasswordReset resetData);
+
     public ResponseEntity<customAPIResponse<List<usersForFunctionAuthorityDTO>>> userListForFunctionAuthority();
+
+    public ResponseEntity<customAPIResponse<List<usersForFunctionAuthorityDTO>>> userListForAuthorityRevoke();
+
     public ResponseEntity<customAPIResponse<List<userListForPasswordResetDTO>>> userListForPasswordReset();
 }

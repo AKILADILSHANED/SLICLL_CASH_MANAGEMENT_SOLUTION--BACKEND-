@@ -8,7 +8,11 @@ import org.springframework.http.ResponseEntity;
 import java.util.List;
 
 public interface userModuleService {
-    public ResponseEntity<customAPIResponse<List<getUserModuleDTO>>> getUserModule();
+    public ResponseEntity<customAPIResponse<List<getUserModuleDTO>>> getUserModuleForAuthorityGrant();
+
+    public ResponseEntity<customAPIResponse<List<getUserModuleDTO>>> getUserModuleForAuthorityRevoke();
+
     public ResponseEntity<customAPIResponse<List<getFunctionsForGrantDTO>>> getFunctionsForGrant(String userId, String moduleId);
+
     public ResponseEntity<customAPIResponse<List<getFunctionsForGrantDTO>>> getFunctionsForRevoke(String userId, String moduleId);
 }

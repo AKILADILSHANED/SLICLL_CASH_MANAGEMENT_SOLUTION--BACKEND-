@@ -3,9 +3,14 @@ package SLICGL.example.SLICGL_Inter_Bant_Transfer_Management.Service;
 import SLICGL.example.SLICGL_Inter_Bant_Transfer_Management.APIResponse.customAPIResponse;
 import SLICGL.example.SLICGL_Inter_Bant_Transfer_Management.DTO.*;
 import SLICGL.example.SLICGL_Inter_Bant_Transfer_Management.Entity.transferChannel;
+import SLICGL.example.SLICGL_Inter_Bant_Transfer_Management.ExceptionHandlers.ChannelExceptions.ChannelDeletionFailureException;
+import SLICGL.example.SLICGL_Inter_Bant_Transfer_Management.ExceptionHandlers.ChannelExceptions.ChannelInputDataViolationException;
+import SLICGL.example.SLICGL_Inter_Bant_Transfer_Management.ExceptionHandlers.ChannelExceptions.ChannelNotFoundException;
+import SLICGL.example.SLICGL_Inter_Bant_Transfer_Management.ExceptionHandlers.ChannelExceptions.ChannelUpdateFailureException;
 import SLICGL.example.SLICGL_Inter_Bant_Transfer_Management.Logs.LogActivity;
 import SLICGL.example.SLICGL_Inter_Bant_Transfer_Management.Repositoriy.UserRepo;
 import SLICGL.example.SLICGL_Inter_Bant_Transfer_Management.Repositoriy.transferChannelRepo;
+import SLICGL.example.SLICGL_Inter_Bant_Transfer_Management.Security.RequiresPermission;
 import SLICGL.example.SLICGL_Inter_Bant_Transfer_Management.SqlMappers.channelDetailsMapper;
 import SLICGL.example.SLICGL_Inter_Bant_Transfer_Management.SqlMappers.getChannelsForDefineOptionsMapper;
 import SLICGL.example.SLICGL_Inter_Bant_Transfer_Management.SqlMappers.searchChannelForRemoveMapper;
@@ -35,8 +40,13 @@ public class transferChannelIMPL implements transferChannelService {
 
     @Transactional
     @Override
+    @RequiresPermission("FUNC-050")
+    @LogActivity(methodDescription = "This method will add a new transfer channel to the system")
     public ResponseEntity<customAPIResponse<String>> addChannel(addNewChannelDTO newChannel) {
-        try {
+        // Check whether user provided all required data
+        if (newChannel.getChannelType() == null || newChannel.getChannelType().isEmpty() || newChannel.getShortKey() == null || newChannel.getShortKey().isEmpty() || newChannel.getPriorityLevel() == null) {
+            throw new ChannelInputDataViolationException("Please provide all required data");
+        } else {
             String newChannelId;
             //Get last Channel ID from the table;
             String lastChannelId = transferChannelRepository.getLastChannelId();
@@ -67,45 +77,29 @@ public class transferChannelIMPL implements transferChannelService {
                             null
                     )
             );
-        } catch (Exception e) {
-            return ResponseEntity.status(HttpStatus.OK).body(
-                    new customAPIResponse<>(
-                            false,
-                            "Un-expected error occurred while registering the channel. Please contact administrator!",
-                            null
-                    )
-            );
         }
     }
 
     @Override
+    @RequiresPermission("FUNC-051")
+    @LogActivity(methodDescription = "This method will display active transfer channel details")
     public ResponseEntity<customAPIResponse<List<channelDetailsDTO>>> channelDetails() {
-        try {
-            String Sql = "SELECT CHNL.channel_id, CHNL.channel_type, CHNL.short_key, CHNL.priority_level, CHNL.created_date, CASE WHEN CHNL.deleted_status = 0 THEN 'Active' ELSE 'Deleted' END AS 'deleted_status', CASE WHEN CHNL.delete_by IS NULL THEN 'N/A' ELSE USRDELETED.user_first_name END AS 'delete_by', USRDEFINED.user_first_name FROM transfer_channel CHNL LEFT JOIN user USRDEFINED ON CHNL.defined_by = USRDEFINED.user_id LEFT JOIN user USRDELETED ON CHNL.delete_by = USRDELETED.user_id ORDER BY CHNL.priority_level ASC";
-            List<channelDetailsDTO> channelDetails = template.query(Sql, new channelDetailsMapper());
-            if (channelDetails.isEmpty()) {
-                return ResponseEntity.status(HttpStatus.OK).body(
-                        new customAPIResponse<>(
-                                false,
-                                "No Transfer Channels are available!",
-                                null
-                        )
-                );
-            } else {
-                return ResponseEntity.status(HttpStatus.OK).body(
-                        new customAPIResponse<>(
-                                true,
-                                null,
-                                channelDetails
-                        )
-                );
-            }
-        } catch (Exception e) {
-            return ResponseEntity.status(HttpStatus.OK).body(
+        String Sql = "SELECT CHNL.channel_id, CHNL.channel_type, CHNL.short_key, CHNL.priority_level, CHNL.created_date, CASE WHEN CHNL.deleted_status = 0 THEN 'Active' ELSE 'Deleted' END AS 'deleted_status', CASE WHEN CHNL.delete_by IS NULL THEN 'N/A' ELSE USRDELETED.user_first_name END AS 'delete_by', USRDEFINED.user_first_name FROM transfer_channel CHNL LEFT JOIN user USRDEFINED ON CHNL.defined_by = USRDEFINED.user_id LEFT JOIN user USRDELETED ON CHNL.delete_by = USRDELETED.user_id ORDER BY CHNL.priority_level ASC";
+        List<channelDetailsDTO> channelDetails = template.query(Sql, new channelDetailsMapper());
+        if (channelDetails.isEmpty()) {
+            return ResponseEntity.status(HttpStatus.NOT_FOUND).body(
                     new customAPIResponse<>(
                             false,
-                            "Un-expected error occurred while fetching channel data. Please contact administrator!",
+                            "No Transfer Channels found",
                             null
+                    )
+            );
+        } else {
+            return ResponseEntity.status(HttpStatus.OK).body(
+                    new customAPIResponse<>(
+                            true,
+                            null,
+                            channelDetails
                     )
             );
         }
@@ -113,119 +107,91 @@ public class transferChannelIMPL implements transferChannelService {
 
     @Transactional
     @Override
+    @RequiresPermission("FUNC-052")
+    @LogActivity(methodDescription = "This method will delete channel details")
     public ResponseEntity<customAPIResponse<String>> removeChannel(String channelId) {
-        try {
+        //Check whether user provided channel id
+        if (channelId == null || channelId.isEmpty()) {
+            throw new ChannelInputDataViolationException("Please provide channel id");
+        } else {
             //Check whether any record is available for provided channel id;
             Optional<transferChannel> channel = transferChannelRepository.findById(channelId);
             if (channel.isEmpty()) {
-                return ResponseEntity.status(HttpStatus.OK).body(
-                        new customAPIResponse<>(
-                                false,
-                                "No Transfer Channel is identified for provided Channel ID!",
-                                null
-                        )
-                );
+                throw new ChannelNotFoundException("No Transfer Channel is identified for provided Channel ID");
             } else {
                 int affectedRow = transferChannelRepository.removeChannel(session.getAttribute("userId").toString(), channelId);
                 if (affectedRow > 0) {
-                    //Check whether the record is already removed or not;
-                    if (channel.get().getDeleteStatus() == 1) {
-                        return ResponseEntity.status(HttpStatus.OK).body(
-                                new customAPIResponse<>(
-                                        false,
-                                        "This Channel ID: " + channelId + " is already deleted. No further deletion is required!",
-                                        null
-                                )
-                        );
-                    } else {
-                        return ResponseEntity.status(HttpStatus.OK).body(
-                                new customAPIResponse<>(
-                                        true,
-                                        "Channel ID: " + channelId + " removed successfully!",
-                                        null
-                                )
-                        );
-                    }
+                    return ResponseEntity.status(HttpStatus.OK).body(
+                            new customAPIResponse<>(
+                                    true,
+                                    "Channel ID: " + channelId + " deleted successfully",
+                                    null
+                            )
+                    );
                 } else {
-                    //No code block to be run;
-                    return null;
+                    throw new ChannelDeletionFailureException("Couldn't delete channel. Please contact administrator");
                 }
             }
-        } catch (Exception e) {
-            return ResponseEntity.status(HttpStatus.OK).body(
-                    new customAPIResponse<>(
-                            false,
-                            e.getMessage() + " Un-expected error occurred while removing channel data. Please contact administrator!",
-                            null
-                    )
-            );
         }
     }
 
     @Override
+    @RequiresPermission("FUNC-052")
+    @LogActivity(methodDescription = "This method will display channel details for delete")
     public ResponseEntity<customAPIResponse<channelSearchForRemoveDTO>> searchChannelForRemove(String channelId) {
-        try {
+        //Check whether user provided channel id
+        if (channelId == null || channelId.isEmpty()) {
+            throw new ChannelInputDataViolationException("Please provide channel id");
+        } else {
             //Check whether any record is available for provided channel id;
             Optional<transferChannel> channel = transferChannelRepository.findById(channelId);
-
             if (channel.isEmpty()) {
-                return ResponseEntity.status(HttpStatus.OK).body(
-                        new customAPIResponse<>(
-                                false,
-                                "No Transfer Channel is identified for provided Channel ID!",
-                                null
-                        )
-                );
+                throw new ChannelNotFoundException("No Transfer Channel is identified for provided Channel ID");
             } else {
-                String Sql = "SELECT CHNL.channel_id, CHNL.channel_type, CHNL.short_key, CHNL.priority_level, CHNL.created_date, USRDEFINED.user_first_name FROM transfer_channel CHNL LEFT JOIN user USRDEFINED ON CHNL.defined_by = USRDEFINED.user_id WHERE CHNL.channel_id = ?";
+                String Sql = "SELECT CHNL.channel_id, CHNL.channel_type, CHNL.short_key, CHNL.priority_level, CHNL.deleted_status, CHNL.created_date, USRDEFINED.user_first_name FROM transfer_channel CHNL LEFT JOIN user USRDEFINED ON CHNL.defined_by = USRDEFINED.user_id WHERE CHNL.channel_id = ?";
                 List<channelSearchForRemoveDTO> searchedChannel = template.query(Sql, new Object[]{channelId}, new searchChannelForRemoveMapper());
-                return ResponseEntity.status(HttpStatus.OK).body(
-                        new customAPIResponse<>(
-                                true,
-                                null,
-                                searchedChannel.get(0)
-                        )
-                );
+                //Check whether the channel is already deleted or not
+                if (searchedChannel.get(0).getDeleteStatus() == 1) {
+                    return ResponseEntity.status(HttpStatus.CONFLICT).body(
+                            new customAPIResponse<>(
+                                    false,
+                                    "This channel is already deleted",
+                                    null
+                            )
+                    );
+                } else {
+                    return ResponseEntity.status(HttpStatus.OK).body(
+                            new customAPIResponse<>(
+                                    true,
+                                    null,
+                                    searchedChannel.get(0)
+                            )
+                    );
+                }
             }
-        } catch (Exception e) {
-            return ResponseEntity.status(HttpStatus.OK).body(
-                    new customAPIResponse<>(
-                            false,
-                            "Un-expected error occurred while fetching data. Please contact administrator!",
-                            null
-                    )
-            );
         }
     }
 
     @Override
+    @RequiresPermission("FUNC-053")
+    @LogActivity(methodDescription = "This method will display channel details for setting up priority levels")
     public ResponseEntity<customAPIResponse<List<setPriorityLevelDTO>>> setPriorityLevel() {
-        try {
-            String Sql = "SELECT channel_id, channel_type, short_key, priority_level FROM transfer_channel WHERE deleted_status = 0 ORDER BY priority_level ASC";
-            List<setPriorityLevelDTO> priorityLevelList = template.query(Sql, new setPriorityLevelMapper());
-            if (priorityLevelList.isEmpty()) {
-                return ResponseEntity.status(HttpStatus.OK).body(
-                        new customAPIResponse<>(
-                                false,
-                                "No Transfer Channels available",
-                                null
-                        )
-                );
-            } else {
-                return ResponseEntity.status(HttpStatus.OK).body(
-                        new customAPIResponse<>(
-                                true,
-                                null,
-                                priorityLevelList
-                        )
-                );
-            }
-        } catch (Exception e) {
-            return ResponseEntity.status(HttpStatus.OK).body(
+        String Sql = "SELECT channel_id, channel_type, short_key, priority_level FROM transfer_channel WHERE deleted_status = 0 ORDER BY priority_level ASC";
+        List<setPriorityLevelDTO> priorityLevelList = template.query(Sql, new setPriorityLevelMapper());
+        if (priorityLevelList.isEmpty()) {
+            return ResponseEntity.status(HttpStatus.NOT_FOUND).body(
                     new customAPIResponse<>(
                             false,
-                            "Un-expected error occurred while fetching Channel Details. Please contact administrator!",
+                            "No Transfer Channels available",
                             null
+                    )
+            );
+        } else {
+            return ResponseEntity.status(HttpStatus.OK).body(
+                    new customAPIResponse<>(
+                            true,
+                            null,
+                            priorityLevelList
                     )
             );
         }
@@ -233,8 +199,13 @@ public class transferChannelIMPL implements transferChannelService {
 
     @Transactional
     @Override
-    public ResponseEntity<customAPIResponse<String>> changePriorityLevel(String channelId, int newLevel) {
-        try {
+    @RequiresPermission("FUNC-053")
+    @LogActivity(methodDescription = "This method will update priority level of selected channel")
+    public ResponseEntity<customAPIResponse<String>> changePriorityLevel(String channelId, Integer newLevel) {
+        //Check whether user provided all required data
+        if (channelId == null || channelId.isEmpty() || newLevel == null) {
+            throw new ChannelInputDataViolationException("Please provide both channel id and updated level");
+        } else {
             int affectedRows = transferChannelRepository.updateNewLevel(newLevel, channelId);
             if (affectedRows > 0) {
                 return ResponseEntity.status(HttpStatus.OK).body(
@@ -245,53 +216,56 @@ public class transferChannelIMPL implements transferChannelService {
                         )
                 );
             } else {
-                return ResponseEntity.status(HttpStatus.OK).body(
-                        new customAPIResponse<>(
-                                false,
-                                "Un-expected error occurred while setting new level. Please contact administrator!",
-                                null
-                        )
-                );
+                throw new ChannelUpdateFailureException("Couldn't update channel. Please contact administrator");
             }
-        } catch (Exception e) {
-            return ResponseEntity.status(HttpStatus.OK).body(
+        }
+    }
+
+    @Override
+    @RequiresPermission("FUNC-054")
+    @LogActivity(methodDescription = "This method will load transfer channels for define transfer options")
+    public ResponseEntity<customAPIResponse<List<getChannelsForDefineOptionsDTO>>> getChannelsForDefineOptions() {
+        String Sql = "SELECT channel_id, channel_type, short_key FROM transfer_channel WHERE deleted_status = 0;";
+        List<getChannelsForDefineOptionsDTO> channelList = template.query(Sql, new getChannelsForDefineOptionsMapper());
+        if (channelList.isEmpty()) {
+            return ResponseEntity.status(HttpStatus.NOT_FOUND).body(
                     new customAPIResponse<>(
                             false,
-                            "Un-expected error occurred while setting new level. Please contact administrator!",
+                            "No Channel Details available",
                             null
+                    )
+            );
+        } else {
+            return ResponseEntity.status(HttpStatus.OK).body(
+                    new customAPIResponse<>(
+                            true,
+                            null,
+                            channelList
                     )
             );
         }
     }
 
     @Override
-    public ResponseEntity<customAPIResponse<List<getChannelsForDefineOptionsDTO>>> getChannelsForDefineOptions() {
-        try {
-            String Sql = "SELECT channel_id, channel_type, short_key FROM transfer_channel WHERE deleted_status = 0;";
-            List<getChannelsForDefineOptionsDTO> channelList = template.query(Sql, new getChannelsForDefineOptionsMapper());
-            if (channelList.isEmpty()) {
-                return ResponseEntity.status(HttpStatus.OK).body(
-                        new customAPIResponse<>(
-                                false,
-                                "No Channel Details available!",
-                                null
-                        )
-                );
-            } else {
-                return ResponseEntity.status(HttpStatus.OK).body(
-                        new customAPIResponse<>(
-                                true,
-                                null,
-                                channelList
-                        )
-                );
-            }
-        } catch (Exception e) {
-            return ResponseEntity.status(HttpStatus.OK).body(
+    @RequiresPermission("FUNC-057")
+    @LogActivity(methodDescription = "This method will load transfer channels for delete transfer options")
+    public ResponseEntity<customAPIResponse<List<getChannelsForDefineOptionsDTO>>> getChannelsForDeleteOptions() {
+        String Sql = "SELECT channel_id, channel_type, short_key FROM transfer_channel WHERE deleted_status = 0;";
+        List<getChannelsForDefineOptionsDTO> channelList = template.query(Sql, new getChannelsForDefineOptionsMapper());
+        if (channelList.isEmpty()) {
+            return ResponseEntity.status(HttpStatus.NOT_FOUND).body(
                     new customAPIResponse<>(
                             false,
-                            "Un-expected error occurred while fetching channel details. Please contact administrator!",
+                            "No Channel Details available",
                             null
+                    )
+            );
+        } else {
+            return ResponseEntity.status(HttpStatus.OK).body(
+                    new customAPIResponse<>(
+                            true,
+                            null,
+                            channelList
                     )
             );
         }

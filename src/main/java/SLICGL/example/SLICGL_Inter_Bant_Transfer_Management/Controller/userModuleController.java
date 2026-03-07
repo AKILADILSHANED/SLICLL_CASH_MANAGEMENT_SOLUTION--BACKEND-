@@ -19,18 +19,24 @@ import java.util.List;
 public class userModuleController {
     @Autowired
     userModuleService userModuleService;
-    @GetMapping(value = "/getModuleList")
-    public ResponseEntity<customAPIResponse<List<getUserModuleDTO>>> getUserModule(){
-        return userModuleService.getUserModule();
+
+    @GetMapping(value = "/get-module-list-grant-authority")
+    public ResponseEntity<customAPIResponse<List<getUserModuleDTO>>> getUserModuleForAuthorityGrant() {
+        return userModuleService.getUserModuleForAuthorityGrant();
+    }
+
+    @GetMapping(value = "/get-module-list-revoke-authority")
+    public ResponseEntity<customAPIResponse<List<getUserModuleDTO>>> getUserModuleForAuthorityRevoke() {
+        return userModuleService.getUserModuleForAuthorityRevoke();
     }
 
     @GetMapping(value = "/getFunctionsForGrant")
-    public ResponseEntity<customAPIResponse<List<getFunctionsForGrantDTO>>> getFunctionsForGrant(String userId, String moduleId){
+    public ResponseEntity<customAPIResponse<List<getFunctionsForGrantDTO>>> getFunctionsForGrant(String userId, String moduleId) {
         return userModuleService.getFunctionsForGrant(userId, moduleId);
     }
 
     @GetMapping(value = "/getFunctionsForRevoke")
-    public ResponseEntity<customAPIResponse<List<getFunctionsForGrantDTO>>> getFunctionsForRevoke(String userId, String moduleId){
+    public ResponseEntity<customAPIResponse<List<getFunctionsForGrantDTO>>> getFunctionsForRevoke(String userId, String moduleId) {
         return userModuleService.getFunctionsForRevoke(userId, moduleId);
     }
 }

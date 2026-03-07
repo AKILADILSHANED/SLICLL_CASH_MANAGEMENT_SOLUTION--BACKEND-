@@ -3,12 +3,12 @@ package SLICGL.example.SLICGL_Inter_Bant_Transfer_Management.DTO;
 public class addNewChannelDTO {
     private String channelType;
     private String shortKey;
-    private int priorityLevel;
+    private Integer priorityLevel;
 
     public addNewChannelDTO() {
     }
 
-    public addNewChannelDTO(String channelType, String shortKey, int priorityLevel) {
+    public addNewChannelDTO(String channelType, String shortKey, Integer priorityLevel) {
         this.channelType = channelType;
         this.shortKey = shortKey;
         this.priorityLevel = priorityLevel;
@@ -30,11 +30,11 @@ public class addNewChannelDTO {
         this.shortKey = shortKey;
     }
 
-    public int getPriorityLevel() {
+    public Integer getPriorityLevel() {
         return priorityLevel;
     }
 
-    public void setPriorityLevel(int priorityLevel) {
+    public void setPriorityLevel(Integer priorityLevel) {
         this.priorityLevel = priorityLevel;
     }
 }

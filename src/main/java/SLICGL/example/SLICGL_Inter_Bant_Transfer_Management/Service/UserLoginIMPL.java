@@ -429,14 +429,39 @@ public class UserLoginIMPL implements UserService {
     }
 
     @Override
+    @RequiresPermission("FUNC-059")
+    @LogActivity(methodDescription = "This method fill fetch list of available users for grant authorities")
     public ResponseEntity<customAPIResponse<List<usersForFunctionAuthorityDTO>>> userListForFunctionAuthority() {
-        logger.info("By User Id: {} started to get User List for functional authority", session.getAttribute("userId").toString());
         String Sql = "SELECT user_id, user_epf, user_first_name, user_last_name FROM user WHERE user_active_status = 1";
         List<usersForFunctionAuthorityDTO> userList = template.query(Sql, new userListForFunctionAuthorityMapper());
         if (userList.isEmpty()) {
-            throw new DataNotFoundException("No Users available!");
+            return ResponseEntity.status(HttpStatus.NOT_FOUND).body(new customAPIResponse<>(
+                    false,
+                    "No users found",
+                    null
+            ));
         } else {
-            logger.info("Found {} users for functional authorities", userList.size());
+            return ResponseEntity.status(HttpStatus.OK).body(new customAPIResponse<>(
+                    true,
+                    null,
+                    userList
+            ));
+        }
+    }
+
+    @Override
+    @RequiresPermission("FUNC-060")
+    @LogActivity(methodDescription = "This method fill fetch list of available users for revoke authorities")
+    public ResponseEntity<customAPIResponse<List<usersForFunctionAuthorityDTO>>> userListForAuthorityRevoke() {
+        String Sql = "SELECT user_id, user_epf, user_first_name, user_last_name FROM user WHERE user_active_status = 1";
+        List<usersForFunctionAuthorityDTO> userList = template.query(Sql, new userListForFunctionAuthorityMapper());
+        if (userList.isEmpty()) {
+            return ResponseEntity.status(HttpStatus.NOT_FOUND).body(new customAPIResponse<>(
+                    false,
+                    "No users found",
+                    null
+            ));
+        } else {
             return ResponseEntity.status(HttpStatus.OK).body(new customAPIResponse<>(
                     true,
                     null,

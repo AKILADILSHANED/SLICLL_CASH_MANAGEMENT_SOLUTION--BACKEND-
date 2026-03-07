@@ -3,9 +3,16 @@ package SLICGL.example.SLICGL_Inter_Bant_Transfer_Management;
 import SLICGL.example.SLICGL_Inter_Bant_Transfer_Management.APIResponse.customAPIResponse;
 import SLICGL.example.SLICGL_Inter_Bant_Transfer_Management.ExceptionHandlers.AccountBalanceExceptions.BalanceInputDataViolationException;
 import SLICGL.example.SLICGL_Inter_Bant_Transfer_Management.ExceptionHandlers.AccountBalanceExceptions.BalanceNotUpdateException;
+import SLICGL.example.SLICGL_Inter_Bant_Transfer_Management.ExceptionHandlers.AuthorityExceptions.AuthorityGrantingFailureException;
+import SLICGL.example.SLICGL_Inter_Bant_Transfer_Management.ExceptionHandlers.AuthorityExceptions.AuthorityInputDataViolationException;
+import SLICGL.example.SLICGL_Inter_Bant_Transfer_Management.ExceptionHandlers.AuthorityExceptions.AuthorityRevokingFailureException;
 import SLICGL.example.SLICGL_Inter_Bant_Transfer_Management.ExceptionHandlers.BankAccountExceptions.AccountInputDataViolationException;
 import SLICGL.example.SLICGL_Inter_Bant_Transfer_Management.ExceptionHandlers.BankAccountExceptions.AccountNotFoundException;
 import SLICGL.example.SLICGL_Inter_Bant_Transfer_Management.ExceptionHandlers.BankAccountExceptions.AccountNotUpdateException;
+import SLICGL.example.SLICGL_Inter_Bant_Transfer_Management.ExceptionHandlers.ChannelExceptions.ChannelDeletionFailureException;
+import SLICGL.example.SLICGL_Inter_Bant_Transfer_Management.ExceptionHandlers.ChannelExceptions.ChannelInputDataViolationException;
+import SLICGL.example.SLICGL_Inter_Bant_Transfer_Management.ExceptionHandlers.ChannelExceptions.ChannelNotFoundException;
+import SLICGL.example.SLICGL_Inter_Bant_Transfer_Management.ExceptionHandlers.ChannelExceptions.ChannelUpdateFailureException;
 import SLICGL.example.SLICGL_Inter_Bant_Transfer_Management.ExceptionHandlers.FundRequestExceptions.*;
 import SLICGL.example.SLICGL_Inter_Bant_Transfer_Management.ExceptionHandlers.PaymentExceptions.PaymentInputDataViolationException;
 import SLICGL.example.SLICGL_Inter_Bant_Transfer_Management.ExceptionHandlers.PaymentExceptions.PaymentNotFoundException;
@@ -15,6 +22,7 @@ import SLICGL.example.SLICGL_Inter_Bant_Transfer_Management.ExceptionHandlers.Re
 import SLICGL.example.SLICGL_Inter_Bant_Transfer_Management.ExceptionHandlers.RepoExceptions.*;
 import SLICGL.example.SLICGL_Inter_Bant_Transfer_Management.ExceptionHandlers.ReportExceptions.ReportInputDataViolationException;
 import SLICGL.example.SLICGL_Inter_Bant_Transfer_Management.ExceptionHandlers.TransferExceptions.*;
+import SLICGL.example.SLICGL_Inter_Bant_Transfer_Management.ExceptionHandlers.TransferOptionExceptions.*;
 import SLICGL.example.SLICGL_Inter_Bant_Transfer_Management.ExceptionHandlers.UserExceptions.*;
 import jakarta.servlet.http.HttpServletRequest;
 import org.slf4j.Logger;
@@ -472,5 +480,135 @@ public class GlobalExceptionHandler {
         );
     }
 
+    @ExceptionHandler(ChannelInputDataViolationException.class)
+    public ResponseEntity<customAPIResponse<String>> ChannelInputDataViolationException(ChannelInputDataViolationException e, HttpServletRequest request) {
+        return ResponseEntity.status(HttpStatus.CONFLICT).body(
+                new customAPIResponse<>(
+                        false,
+                        e.getMessage(),
+                        null
+                )
+        );
+    }
 
+    @ExceptionHandler(ChannelNotFoundException.class)
+    public ResponseEntity<customAPIResponse<String>> ChannelNotFoundException(ChannelNotFoundException e, HttpServletRequest request) {
+        return ResponseEntity.status(HttpStatus.NOT_FOUND).body(
+                new customAPIResponse<>(
+                        false,
+                        e.getMessage(),
+                        null
+                )
+        );
+    }
+
+    @ExceptionHandler(ChannelDeletionFailureException.class)
+    public ResponseEntity<customAPIResponse<String>> ChannelDeletionFailureException(ChannelDeletionFailureException e, HttpServletRequest request) {
+        return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(
+                new customAPIResponse<>(
+                        false,
+                        e.getMessage(),
+                        null
+                )
+        );
+    }
+
+    @ExceptionHandler(ChannelUpdateFailureException.class)
+    public ResponseEntity<customAPIResponse<String>> ChannelUpdateFailureException(ChannelUpdateFailureException e, HttpServletRequest request) {
+        return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(
+                new customAPIResponse<>(
+                        false,
+                        e.getMessage(),
+                        null
+                )
+        );
+    }
+
+    @ExceptionHandler(OptionInputDataViolationException.class)
+    public ResponseEntity<customAPIResponse<String>> OptionInputDataViolationException(OptionInputDataViolationException e, HttpServletRequest request) {
+        return ResponseEntity.status(HttpStatus.CONFLICT).body(
+                new customAPIResponse<>(
+                        false,
+                        e.getMessage(),
+                        null
+                )
+        );
+    }
+
+    @ExceptionHandler(EmptyOptionListException.class)
+    public ResponseEntity<customAPIResponse<String>> EmptyOptionListException(EmptyOptionListException e, HttpServletRequest request) {
+        return ResponseEntity.status(HttpStatus.NOT_FOUND).body(
+                new customAPIResponse<>(
+                        false,
+                        e.getMessage(),
+                        null
+                )
+        );
+    }
+
+    @ExceptionHandler(OptionDeactivateFailureException.class)
+    public ResponseEntity<customAPIResponse<String>> OptionDeactivateFailureException(OptionDeactivateFailureException e, HttpServletRequest request) {
+        return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(
+                new customAPIResponse<>(
+                        false,
+                        e.getMessage(),
+                        null
+                )
+        );
+    }
+
+    @ExceptionHandler(OptionReactivateFailureException.class)
+    public ResponseEntity<customAPIResponse<String>> OptionReactivateFailureException(OptionReactivateFailureException e, HttpServletRequest request) {
+        return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(
+                new customAPIResponse<>(
+                        false,
+                        e.getMessage(),
+                        null
+                )
+        );
+    }
+
+    @ExceptionHandler(OptionDeletionFailureException.class)
+    public ResponseEntity<customAPIResponse<String>> OptionDeletionFailureException(OptionDeletionFailureException e, HttpServletRequest request) {
+        return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(
+                new customAPIResponse<>(
+                        false,
+                        e.getMessage(),
+                        null
+                )
+        );
+    }
+
+    @ExceptionHandler(AuthorityInputDataViolationException.class)
+    public ResponseEntity<customAPIResponse<String>> AuthorityInputDataViolationException(AuthorityInputDataViolationException e, HttpServletRequest request) {
+        return ResponseEntity.status(HttpStatus.CONFLICT).body(
+                new customAPIResponse<>(
+                        false,
+                        e.getMessage(),
+                        null
+                )
+        );
+    }
+
+    @ExceptionHandler(AuthorityGrantingFailureException.class)
+    public ResponseEntity<customAPIResponse<String>> AuthorityGrantingFailureException(AuthorityGrantingFailureException e, HttpServletRequest request) {
+        return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(
+                new customAPIResponse<>(
+                        false,
+                        e.getMessage(),
+                        null
+                )
+        );
+    }
+
+    @ExceptionHandler(AuthorityRevokingFailureException.class)
+    public ResponseEntity<customAPIResponse<String>> AuthorityRevokingFailureException(AuthorityRevokingFailureException e, HttpServletRequest request) {
+        return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(
+                new customAPIResponse<>(
+                        false,
+                        e.getMessage(),
+                        null
+                )
+        );
+    }
 }

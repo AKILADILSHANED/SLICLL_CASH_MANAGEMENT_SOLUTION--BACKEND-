@@ -34,7 +34,7 @@ public interface repoService {
 
     public ResponseEntity<customAPIResponse<String>> investmentReverse(String repoId);
 
-    public ResponseEntity<customAPIResponse<List<repoDetailsForInvestmentsDTO>>> repoDetailsForPrint();
+    public ResponseEntity<customAPIResponse<List<repoDetailsForInvestmentsDTO>>> repoDetailsForPrint(LocalDate repoDate);
 
     public ResponseEntity<customAPIResponse<List<getRepoOpeningBalancesDTO>>> getRepoOpeningBalances(LocalDate repoDate);
 

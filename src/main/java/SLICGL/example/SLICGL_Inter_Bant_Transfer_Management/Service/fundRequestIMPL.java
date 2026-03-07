@@ -632,6 +632,7 @@ public class fundRequestIMPL implements fundRequestService {
     }
 
     @Override
+    @RequiresPermission("FUNC-022")
     @LogActivity(methodDescription = "This method will display fund request list for approval")
     public ResponseEntity<customAPIResponse<List<getFundRequestForApproveDTO>>> getFundRequestForApprove() {
         String Sql = "SELECT REQ.request_id, BNK.account_number, PMNT.payment_type, USR.user_first_name, REQ.request_amount, REQ.request_date, REQ.required_date FROM fund_request REQ LEFT JOIN bank_account BNK ON REQ.bank_account = BNK.account_id LEFT JOIN payment PMNT ON REQ.payment = PMNT.payment_id LEFT JOIN user USR ON REQ.request_by = USR.user_id WHERE REQ.required_date = ? AND REQ.delete_status = 0 AND REQ.approve_status = 0";
@@ -677,6 +678,7 @@ public class fundRequestIMPL implements fundRequestService {
     }
 
     @Override
+    @RequiresPermission("FUNC-023")
     @LogActivity(methodDescription = "This method will display fund request list for reversal of approval")
     public ResponseEntity<customAPIResponse<List<getFundRequestForReverseDTO>>> getFundRequestForReverse() {
         String Sql = "SELECT REQ.request_id, BNK.account_number, PMNT.payment_type, USR.user_first_name, REQ.request_amount, REQ.request_date, REQ.required_date FROM fund_request REQ LEFT JOIN bank_account BNK ON REQ.bank_account = BNK.account_id LEFT JOIN payment PMNT ON REQ.payment = PMNT.payment_id LEFT JOIN user USR ON REQ.request_by = USR.user_id WHERE REQ.required_date = ? AND REQ.delete_status = 0 AND REQ.approve_status = 1";
@@ -722,20 +724,19 @@ public class fundRequestIMPL implements fundRequestService {
     }
 
     @Override
+    @RequiresPermission("FUNC-049")
+    @LogActivity(methodDescription = "This method will fetch fund request details for cash flow printing")
     public ResponseEntity<customAPIResponse<List<getRequestBalancesDTO>>> getRequestBalances(LocalDate requestDate) {
-        try {
+        // Check whether user provided fund request date
+        if (requestDate == null) {
+            throw new RequestInputDataViolationException("Please provide fund request date");
+        } else {
             String Sql = "SELECT req.request_id, pmnt.payment_type, req.request_amount FROM fund_request req LEFT JOIN payment pmnt ON req.payment = pmnt.payment_id WHERE req.approve_status = 1 AND req.delete_status = 0 AND DATE(req.request_date) = ?";
             List<getRequestBalancesDTO> requestList = template.query(Sql, new getRequestBalancesMapper(), requestDate);
             return ResponseEntity.status(HttpStatus.OK).body(new customAPIResponse<>(
                     true,
                     null,
                     requestList
-            ));
-        } catch (Exception e) {
-            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(new customAPIResponse<>(
-                    false,
-                    "No Fund Requests found!",
-                    null
             ));
         }
     }

@@ -5,7 +5,6 @@ import SLICGL.example.SLICGL_Inter_Bant_Transfer_Management.DTO.*;
 import SLICGL.example.SLICGL_Inter_Bant_Transfer_Management.Entity.accountBalance;
 import SLICGL.example.SLICGL_Inter_Bant_Transfer_Management.ExceptionHandlers.AccountBalanceExceptions.BalanceInputDataViolationException;
 import SLICGL.example.SLICGL_Inter_Bant_Transfer_Management.ExceptionHandlers.AccountBalanceExceptions.BalanceNotUpdateException;
-import SLICGL.example.SLICGL_Inter_Bant_Transfer_Management.ExceptionHandlers.InputValidationException;
 import SLICGL.example.SLICGL_Inter_Bant_Transfer_Management.Logs.LogActivity;
 import SLICGL.example.SLICGL_Inter_Bant_Transfer_Management.Repositoriy.UserRepo;
 import SLICGL.example.SLICGL_Inter_Bant_Transfer_Management.Repositoriy.accountBalanceAdjustmentsRepo;
@@ -365,23 +364,22 @@ public class accountBalanceIMPL implements accountBalanceService {
     }
 
     @Override
+    @RequiresPermission("FUNC-049")
+    @LogActivity(methodDescription = "This method will fetch account balances for cash flow printing")
     public ResponseEntity<customAPIResponse<List<getAccountBalancesDTO>>> getAccountBalances(LocalDate balanceDate) {
-        logger.info("By User {} started to get Account Balance Details for Cash Flow generation", session.getAttribute("userId").toString());
         //Check whether the balance date is null or not;
         if (balanceDate == null) {
-            throw new InputValidationException("No Balance date provided by user");
+            throw new BalanceInputDataViolationException("Please provide balance date");
         } else {
             String Sql = "SELECT acc.account_number, accbal.balance_amount FROM account_balance accbal LEFT JOIN bank_account acc ON acc.account_id = accbal.account_id WHERE accbal.balance_date = ? AND accbal.delete_status = 0 AND accbal.balance_amount > 0";
             List<getAccountBalancesDTO> balanceList = template.query(Sql, new getAccountBalancesMapper(), balanceDate);
             if (balanceList.isEmpty()) {
-                logger.warn("No Account Balances found for provided date");
                 return ResponseEntity.status(HttpStatus.NOT_FOUND).body(new customAPIResponse<>(
                         true,
                         null,
                         balanceList
                 ));
             } else {
-                logger.warn("Account Balances found for provided date");
                 return ResponseEntity.status(HttpStatus.OK).body(new customAPIResponse<>(
                         true,
                         null,
@@ -392,23 +390,22 @@ public class accountBalanceIMPL implements accountBalanceService {
     }
 
     @Override
+    @RequiresPermission("FUNC-049")
+    @LogActivity(methodDescription = "This method will fetch overdraft account balances for cash flow printing")
     public ResponseEntity<customAPIResponse<List<getOverdraftBalancesDTO>>> getOverdraftBalances(LocalDate balanceDate) {
-        logger.info("By User {} started to get Overdraft Account Balance Details for Cash Flow generation", session.getAttribute("userId").toString());
         //Check whether the balance date is null or not;
         if (balanceDate == null) {
-            throw new InputValidationException("No Balance date provided by user");
+            throw new BalanceInputDataViolationException("Please provide balance date");
         } else {
             String Sql = "SELECT accbal.balance_id AS 'Balance ID', acc.account_number AS 'Account Number', accbal.balance_amount AS 'Balance Amount' FROM account_balance accbal LEFT JOIN bank_account acc ON acc.account_id = accbal.account_id WHERE accbal.balance_amount < 0 AND accbal.delete_status = 0 AND accbal.balance_date = ?";
             List<getOverdraftBalancesDTO> overdraftBalances = template.query(Sql, new getOverdraftBalancesMapper(), balanceDate);
             if (overdraftBalances.isEmpty()) {
-                logger.warn("No Overdraft Account Balances found for provided date");
                 return ResponseEntity.status(HttpStatus.NOT_FOUND).body(new customAPIResponse<>(
                         true,
                         null,
                         overdraftBalances
                 ));
             } else {
-                logger.warn("Overdraft Account Balances found for provided date");
                 return ResponseEntity.status(HttpStatus.OK).body(new customAPIResponse<>(
                         true,
                         null,
