@@ -29,5 +29,7 @@ public interface UserService {
 
     public ResponseEntity<customAPIResponse<List<usersForFunctionAuthorityDTO>>> userListForAuthorityRevoke();
 
+    public ResponseEntity<customAPIResponse<List<userListForPasswordUnlockDTO>>> userListForPasswordUnlock();
+
     public ResponseEntity<customAPIResponse<List<userListForPasswordResetDTO>>> userListForPasswordReset();
 }

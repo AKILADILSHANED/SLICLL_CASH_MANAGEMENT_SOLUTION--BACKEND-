@@ -14,6 +14,10 @@ import SLICGL.example.SLICGL_Inter_Bant_Transfer_Management.ExceptionHandlers.Ch
 import SLICGL.example.SLICGL_Inter_Bant_Transfer_Management.ExceptionHandlers.ChannelExceptions.ChannelNotFoundException;
 import SLICGL.example.SLICGL_Inter_Bant_Transfer_Management.ExceptionHandlers.ChannelExceptions.ChannelUpdateFailureException;
 import SLICGL.example.SLICGL_Inter_Bant_Transfer_Management.ExceptionHandlers.FundRequestExceptions.*;
+import SLICGL.example.SLICGL_Inter_Bant_Transfer_Management.ExceptionHandlers.PasswordExceptions.PasswordResetFailureException;
+import SLICGL.example.SLICGL_Inter_Bant_Transfer_Management.ExceptionHandlers.PasswordExceptions.PasswordResetInputDataViolationException;
+import SLICGL.example.SLICGL_Inter_Bant_Transfer_Management.ExceptionHandlers.PasswordExceptions.PasswordUnlockFailureException;
+import SLICGL.example.SLICGL_Inter_Bant_Transfer_Management.ExceptionHandlers.PasswordExceptions.PasswordUnlockInputDataViolationException;
 import SLICGL.example.SLICGL_Inter_Bant_Transfer_Management.ExceptionHandlers.PaymentExceptions.PaymentInputDataViolationException;
 import SLICGL.example.SLICGL_Inter_Bant_Transfer_Management.ExceptionHandlers.PaymentExceptions.PaymentNotFoundException;
 import SLICGL.example.SLICGL_Inter_Bant_Transfer_Management.ExceptionHandlers.PrintingExceptions.PrintingInputDataViolationException;
@@ -611,4 +615,50 @@ public class GlobalExceptionHandler {
                 )
         );
     }
+
+    @ExceptionHandler(PasswordUnlockInputDataViolationException.class)
+    public ResponseEntity<customAPIResponse<String>> PasswordUnlockInputDataViolationException(PasswordUnlockInputDataViolationException e, HttpServletRequest request) {
+        return ResponseEntity.status(HttpStatus.CONFLICT).body(
+                new customAPIResponse<>(
+                        false,
+                        e.getMessage(),
+                        null
+                )
+        );
+    }
+
+    @ExceptionHandler(PasswordResetInputDataViolationException.class)
+    public ResponseEntity<customAPIResponse<String>> PasswordResetInputDataViolationException(PasswordResetInputDataViolationException e, HttpServletRequest request) {
+        return ResponseEntity.status(HttpStatus.CONFLICT).body(
+                new customAPIResponse<>(
+                        false,
+                        e.getMessage(),
+                        null
+                )
+        );
+    }
+
+    @ExceptionHandler(PasswordUnlockFailureException.class)
+    public ResponseEntity<customAPIResponse<String>> PasswordUnlockFailureException(PasswordUnlockFailureException e, HttpServletRequest request) {
+        return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(
+                new customAPIResponse<>(
+                        false,
+                        e.getMessage(),
+                        null
+                )
+        );
+    }
+
+    @ExceptionHandler(PasswordResetFailureException.class)
+    public ResponseEntity<customAPIResponse<String>> PasswordResetFailureException(PasswordResetFailureException e, HttpServletRequest request) {
+        return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(
+                new customAPIResponse<>(
+                        false,
+                        e.getMessage(),
+                        null
+                )
+        );
+    }
+
+
 }

@@ -68,6 +68,11 @@ public class UserController {
         return userLogin.userListForAuthorityRevoke();
     }
 
+    @GetMapping(value = "/userList-password-unlock")
+    public ResponseEntity<customAPIResponse<List<userListForPasswordUnlockDTO>>> userListForPasswordUnlock() {
+        return userLogin.userListForPasswordUnlock();
+    }
+
     @GetMapping(value = "/userList-password-reset")
     public ResponseEntity<customAPIResponse<List<userListForPasswordResetDTO>>> userListForPasswordReset() {
         return userLogin.userListForPasswordReset();

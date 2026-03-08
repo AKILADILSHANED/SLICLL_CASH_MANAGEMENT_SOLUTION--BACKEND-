@@ -14,6 +14,7 @@ import SLICGL.example.SLICGL_Inter_Bant_Transfer_Management.Repositoriy.UserRepo
 import SLICGL.example.SLICGL_Inter_Bant_Transfer_Management.Security.RequiresPermission;
 import SLICGL.example.SLICGL_Inter_Bant_Transfer_Management.SqlMappers.userListForFunctionAuthorityMapper;
 import SLICGL.example.SLICGL_Inter_Bant_Transfer_Management.SqlMappers.userListForPasswordResetMapper;
+import SLICGL.example.SLICGL_Inter_Bant_Transfer_Management.SqlMappers.userListForPasswordUnlockMapper;
 import SLICGL.example.SLICGL_Inter_Bant_Transfer_Management.SqlMappers.userSearchMapper;
 import jakarta.servlet.http.HttpSession;
 import jakarta.transaction.Transactional;
@@ -471,14 +472,39 @@ public class UserLoginIMPL implements UserService {
     }
 
     @Override
+    @RequiresPermission("FUNC-061")
+    @LogActivity(methodDescription = "This method fill fetch list of available users for unlock passwords")
+    public ResponseEntity<customAPIResponse<List<userListForPasswordUnlockDTO>>> userListForPasswordUnlock() {
+        String Sql = "SELECT user_id, user_epf, user_first_name, user_last_name, user_email FROM user WHERE user_active_status = 1";
+        List<userListForPasswordUnlockDTO> userList = template.query(Sql, new userListForPasswordUnlockMapper());
+        if (userList.isEmpty()) {
+            return ResponseEntity.status(HttpStatus.NOT_FOUND).body(new customAPIResponse<>(
+                    false,
+                    "No users found",
+                    null
+            ));
+        } else {
+            return ResponseEntity.status(HttpStatus.OK).body(new customAPIResponse<>(
+                    true,
+                    null,
+                    userList
+            ));
+        }
+    }
+
+    @Override
+    @RequiresPermission("FUNC-062")
+    @LogActivity(methodDescription = "This method fill fetch list of available users for reset passwords")
     public ResponseEntity<customAPIResponse<List<userListForPasswordResetDTO>>> userListForPasswordReset() {
-        logger.info("By User Id: {} started to get User List for Password Reset", session.getAttribute("userId").toString());
         String Sql = "SELECT user_id, user_epf, user_first_name, user_last_name, user_email FROM user WHERE user_active_status = 1";
         List<userListForPasswordResetDTO> userList = template.query(Sql, new userListForPasswordResetMapper());
         if (userList.isEmpty()) {
-            throw new DataNotFoundException("No Users available!");
+            return ResponseEntity.status(HttpStatus.NOT_FOUND).body(new customAPIResponse<>(
+                    false,
+                    "No users found",
+                    null
+            ));
         } else {
-            logger.info("Found {} users for Password Reset", userList.size());
             return ResponseEntity.status(HttpStatus.OK).body(new customAPIResponse<>(
                     true,
                     null,
