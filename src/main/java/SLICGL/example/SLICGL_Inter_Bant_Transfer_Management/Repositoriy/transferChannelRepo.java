@@ -1,6 +1,8 @@
 package SLICGL.example.SLICGL_Inter_Bant_Transfer_Management.Repositoriy;
+
 import SLICGL.example.SLICGL_Inter_Bant_Transfer_Management.APIResponse.customAPIResponse;
 import SLICGL.example.SLICGL_Inter_Bant_Transfer_Management.DTO.getChannelsForDefineOptionsDTO;
+import SLICGL.example.SLICGL_Inter_Bant_Transfer_Management.DTO.getTransferChanelForManualTransferDTO;
 import SLICGL.example.SLICGL_Inter_Bant_Transfer_Management.DTO.transferChanelForTransferHistory;
 import SLICGL.example.SLICGL_Inter_Bant_Transfer_Management.DTO.transferHistoryDTO;
 import SLICGL.example.SLICGL_Inter_Bant_Transfer_Management.Entity.transferChannel;
@@ -30,5 +32,8 @@ public interface transferChannelRepo extends JpaRepository<transferChannel, Stri
 
     @Query(value = "SELECT chnl.channel_id FROM transfer_channel chnl WHERE chnl.deleted_status = 0 ORDER BY chnl.priority_level ASC", nativeQuery = true)
     public List<String> channelsWithPriorities();
+
+    @Query(value = "select chnl.channel_id, chnl.channel_type, chnl.short_key from transfer_channel chnl WHERE chnl.deleted_status = 0", nativeQuery = true)
+    public List<getTransferChanelForManualTransferDTO> channelsListForManualTransfer();
 
 }

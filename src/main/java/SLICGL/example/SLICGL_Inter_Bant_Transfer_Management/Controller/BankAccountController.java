@@ -60,4 +60,9 @@ public class BankAccountController {
     public ResponseEntity<customAPIResponse<Boolean>> checkBankAccountForExistingRepo(@RequestParam String toRepoId, @RequestParam String fromRepoId) {
         return bankAccountService.checkBankAccountForExistingRepo(toRepoId, fromRepoId);
     }
+
+    @GetMapping(value = "/bankAccountsForManualTransfers")
+    public ResponseEntity<customAPIResponse<List<bankAccountListForManualTransfersDTO>>> getBankAccountsForManualTransfers() {
+        return bankAccountService.getBankAccountsForManualTransfers();
+    }
 }

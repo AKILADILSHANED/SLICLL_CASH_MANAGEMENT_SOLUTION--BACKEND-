@@ -5,6 +5,7 @@ import SLICGL.example.SLICGL_Inter_Bant_Transfer_Management.DTO.*;
 import SLICGL.example.SLICGL_Inter_Bant_Transfer_Management.Entity.accountBalance;
 import SLICGL.example.SLICGL_Inter_Bant_Transfer_Management.ExceptionHandlers.AccountBalanceExceptions.BalanceInputDataViolationException;
 import SLICGL.example.SLICGL_Inter_Bant_Transfer_Management.ExceptionHandlers.AccountBalanceExceptions.BalanceNotUpdateException;
+import SLICGL.example.SLICGL_Inter_Bant_Transfer_Management.ExceptionHandlers.TransferExceptions.TransferInputDataViolationException;
 import SLICGL.example.SLICGL_Inter_Bant_Transfer_Management.Logs.LogActivity;
 import SLICGL.example.SLICGL_Inter_Bant_Transfer_Management.Repositoriy.UserRepo;
 import SLICGL.example.SLICGL_Inter_Bant_Transfer_Management.Repositoriy.accountBalanceAdjustmentsRepo;
@@ -22,6 +23,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.stereotype.Service;
 
+import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
@@ -410,6 +412,37 @@ public class accountBalanceIMPL implements accountBalanceService {
                         true,
                         null,
                         overdraftBalances
+                ));
+            }
+        }
+    }
+
+    @Override
+    @RequiresPermission("FUNC-024")
+    @LogActivity(methodDescription = "This method will fetch available balance for given bank account")
+    public ResponseEntity<customAPIResponse<BigDecimal>> getAvailableBalances(String accountId) {
+        // Check whether user has been provided account id
+        if (accountId == null || accountId.isEmpty()) {
+            throw new TransferInputDataViolationException("Please provide account id");
+        } else {
+            BigDecimal availableBalance = accountBalanceRepository.getAvailableBalance(accountId, accountId);
+            if (availableBalance == null) {
+                return ResponseEntity.status(HttpStatus.NOT_FOUND).body(new customAPIResponse<>(
+                        false,
+                        "Account Balance not found for selected Bank Account",
+                        null
+                ));
+            } else if (availableBalance.compareTo(BigDecimal.ZERO) == 0) {
+                return ResponseEntity.status(HttpStatus.OK).body(new customAPIResponse<>(
+                        true,
+                        null,
+                        availableBalance
+                ));
+            } else {
+                return ResponseEntity.status(HttpStatus.OK).body(new customAPIResponse<>(
+                        true,
+                        null,
+                        availableBalance
                 ));
             }
         }

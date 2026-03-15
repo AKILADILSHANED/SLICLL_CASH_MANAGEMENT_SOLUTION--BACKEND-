@@ -287,8 +287,32 @@ public class transferChannelIMPL implements transferChannelService {
             return ResponseEntity.status(HttpStatus.NOT_FOUND).body(
                     new customAPIResponse<>(
                             false,
-                            "No Transfer Chanel details to fetch",
+                            "No Transfer Channel details to fetch",
                             null
+                    )
+            );
+        }
+    }
+
+    @Override
+    @RequiresPermission("FUNC-024")
+    @LogActivity(methodDescription = "This method will fetch available transfer channels for manual transfers")
+    public ResponseEntity<customAPIResponse<List<getTransferChanelForManualTransferDTO>>> getTransferChanelForManualTransfer() {
+        List<getTransferChanelForManualTransferDTO> channelList = transferChannelRepository.channelsListForManualTransfer();
+        if (channelList.isEmpty()) {
+            return ResponseEntity.status(HttpStatus.NOT_FOUND).body(
+                    new customAPIResponse<>(
+                            false,
+                            "No Transfer Channels found",
+                            null
+                    )
+            );
+        } else {
+            return ResponseEntity.status(HttpStatus.OK).body(
+                    new customAPIResponse<>(
+                            true,
+                            null,
+                            channelList
                     )
             );
         }

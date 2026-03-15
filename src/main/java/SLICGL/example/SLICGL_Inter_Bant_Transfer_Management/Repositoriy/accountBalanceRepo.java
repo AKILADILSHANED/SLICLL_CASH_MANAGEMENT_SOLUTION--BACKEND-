@@ -6,6 +6,7 @@ import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.stereotype.Repository;
 
+import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.util.List;
 
@@ -37,4 +38,7 @@ public interface accountBalanceRepo extends JpaRepository<accountBalance, String
 
     @Query(value = "SELECT accBal.balance_id FROM account_balance accBal WHERE accBal.delete_status = 0 AND accBal.account_id = ?1 AND DATE(accBal.balance_date) = ?2 ", nativeQuery = true)
     public String getBalanceId(String accountId, LocalDate currentDate);
+
+    @Query(value = "SELECT((SELECT bal.balance_amount AS 'original_balance' FROM account_balance bal WHERE bal.account_id = ?1 AND DATE(bal.balance_Date) = CURRENT_DATE AND bal.delete_status = 0) + (SELECT CASE WHEN SUM(adj.adjustment_amount) IS NULL THEN 0 ELSE SUM(adj.adjustment_amount) END AS 'available_balance' FROM account_balance_adjustments adj LEFT JOIN  cross_adjustment crsadj ON adj.cross_adjustment_id = crsadj.cross_adjustment_id LEFT JOIN account_balance accBal ON adj.adjustment_balance = accBal.balance_id LEFT JOIN bank_account acc ON accBal.account_id = acc.account_id WHERE DATE(adj.adjustment_date) = CURRENT_DATE AND DATE(accBal.balance_date) = CURRENT_DATE AND accBal.delete_status = 0 AND crsadj.is_reversed = 0 AND acc.account_id = ?2)) AS 'Balance' \n", nativeQuery = true)
+    public BigDecimal getAvailableBalance(String accountId01, String accountId02);
 }

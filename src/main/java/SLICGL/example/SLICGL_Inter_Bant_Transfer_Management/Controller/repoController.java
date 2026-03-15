@@ -119,4 +119,14 @@ public class repoController {
     public ResponseEntity<customAPIResponse<List<getRepoAccountsListDTO>>> getRepoAccountsList() {
         return repoIMPL.getRepoAccountsList();
     }
+
+    @GetMapping(value = "/reposForManualTransfers")
+    public ResponseEntity<customAPIResponse<List<repoListForManualTransfersDTO>>> getReposForManualTransfers() {
+        return repoIMPL.getReposForManualTransfers();
+    }
+
+    @GetMapping(value = "/get-available-balance")
+    public ResponseEntity<customAPIResponse<BigDecimal>> getAvailableBalances(@RequestParam String repoId) {
+        return repoIMPL.getAvailableBalances(repoId);
+    }
 }

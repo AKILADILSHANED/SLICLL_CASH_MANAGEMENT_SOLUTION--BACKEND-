@@ -20,74 +20,73 @@ public class fundTransferController {
     fundTransferIMPL fundTransfers;
 
     @PostMapping(value = "/initiate-transfers")
-    public ResponseEntity<customAPIResponse<String>> initiateTransfers(){
+    public ResponseEntity<customAPIResponse<String>> initiateTransfers() {
 
         return fundTransfers.initiateTransfers();
     }
 
     @GetMapping(value = "/display-transfer")
-    public ResponseEntity<customAPIResponse<getTransferForTransferIdDTO>> getTransferForTransferId(@RequestParam String transferId){
+    public ResponseEntity<customAPIResponse<getTransferForTransferIdDTO>> getTransferForTransferId(@RequestParam String transferId) {
         return fundTransfers.getTransferForTransferId(transferId);
     }
 
     @GetMapping(value = "/get-all-transfers")
-    public ResponseEntity<customAPIResponse<List<getAllTransfersDTO>>> getAllTransfers(@RequestParam LocalDate transferDate){
+    public ResponseEntity<customAPIResponse<List<getAllTransfersDTO>>> getAllTransfers(@RequestParam LocalDate transferDate) {
         return fundTransfers.getAllTransfers(transferDate);
     }
 
     @GetMapping(value = "/get-approve-list")
-    public ResponseEntity<customAPIResponse<List<getAllTransferForApproveDTO>>> getAllTransferForApprove(){
+    public ResponseEntity<customAPIResponse<List<getAllTransferForApproveDTO>>> getAllTransferForApprove() {
         return fundTransfers.getAllTransferForApprove();
     }
 
     @PutMapping(value = "/approve-transfer")
-    public ResponseEntity<customAPIResponse<String>> approveTransfer(@RequestParam String transferId){
+    public ResponseEntity<customAPIResponse<String>> approveTransfer(@RequestParam String transferId) {
         return fundTransfers.approveTransfer(transferId);
     }
 
     @GetMapping(value = "/reject-transfers")
-    public ResponseEntity<customAPIResponse<List<rejectTransfersDTO>>> rejectTransfers(@RequestParam LocalDate transferDate){
+    public ResponseEntity<customAPIResponse<List<rejectTransfersDTO>>> rejectTransfers(@RequestParam LocalDate transferDate) {
         return fundTransfers.rejectTransfers(transferDate);
     }
 
     @PutMapping(value = "/update-checking-rejection")
-    public ResponseEntity<customAPIResponse<String>> saveCheckRejection(@RequestParam String transferId){
+    public ResponseEntity<customAPIResponse<String>> saveCheckRejection(@RequestParam String transferId) {
         return fundTransfers.saveCheckRejection(transferId);
     }
 
     @PutMapping(value = "/update-approval-rejection")
-    public ResponseEntity<customAPIResponse<String>> saveApprovalRejection(@RequestParam String transferId){
+    public ResponseEntity<customAPIResponse<String>> saveApprovalRejection(@RequestParam String transferId) {
         return fundTransfers.saveApprovalRejection(transferId);
     }
 
     @GetMapping(value = "/reverse-transfers")
-    public ResponseEntity<customAPIResponse<List<reverseTransfersDTO>>> reverseTransfers(@RequestParam LocalDate transferDate){
+    public ResponseEntity<customAPIResponse<List<reverseTransfersDTO>>> reverseTransfers(@RequestParam LocalDate transferDate) {
         return fundTransfers.reverseTransfers(transferDate);
     }
 
     @PutMapping(value = "/update-reversal")
-    public ResponseEntity<customAPIResponse<String>> saveReversal(@RequestParam String transferId){
+    public ResponseEntity<customAPIResponse<String>> saveReversal(@RequestParam String transferId) {
         return fundTransfers.saveReversal(transferId);
     }
 
     @PutMapping(value = "/reverse-all")
-    public ResponseEntity<customAPIResponse<String>> reverseAll(@RequestParam LocalDate transferDate){
+    public ResponseEntity<customAPIResponse<String>> reverseAll(@RequestParam LocalDate transferDate) {
         return fundTransfers.reverseAll(transferDate);
     }
 
     @GetMapping(value = "/get-check-list")
-    public ResponseEntity<customAPIResponse<List<getAllTransfersForCheckDTO>>> getAllTransfersForCheck(){
+    public ResponseEntity<customAPIResponse<List<getAllTransfersForCheckDTO>>> getAllTransfersForCheck() {
         return fundTransfers.getAllTransfersForCheck();
     }
 
     @PutMapping(value = "/check-transfer")
-    public ResponseEntity<customAPIResponse<String>> checkTransfer(@RequestParam String transferId){
+    public ResponseEntity<customAPIResponse<String>> checkTransfer(@RequestParam String transferId) {
         return fundTransfers.checkTransfer(transferId);
     }
 
     @PostMapping(value = "/initiate-manual-transfers")
-    public ResponseEntity<customAPIResponse<String>> initiateManualTransfers(@RequestParam String selectedFromBankAccount, @RequestParam String selectedFromAccountNumber, @RequestParam String selectedFromRepoAccount, @RequestParam String selectedToBankAccount, @RequestParam String selectedToAccountNumber, @RequestParam String selectedToRepoAccount, @RequestParam BigDecimal amount, @RequestParam String transferChannel){
-        return fundTransfers.initiateManualTransfers(selectedFromBankAccount, selectedFromAccountNumber, selectedFromRepoAccount, selectedToBankAccount, selectedToAccountNumber, selectedToRepoAccount, amount, transferChannel);
+    public ResponseEntity<customAPIResponse<String>> initiateManualTransfers(@RequestBody manualFundTransferDTO manualFundTransfer) {
+        return fundTransfers.initiateManualTransfers(manualFundTransfer);
     }
-
 }

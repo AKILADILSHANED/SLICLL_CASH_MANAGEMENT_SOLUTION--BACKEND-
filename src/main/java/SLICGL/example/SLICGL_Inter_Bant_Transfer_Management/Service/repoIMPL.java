@@ -6,6 +6,7 @@ import SLICGL.example.SLICGL_Inter_Bant_Transfer_Management.Entity.Repos;
 import SLICGL.example.SLICGL_Inter_Bant_Transfer_Management.Entity.transfers;
 import SLICGL.example.SLICGL_Inter_Bant_Transfer_Management.ExceptionHandlers.PrintingExceptions.PrintingInputDataViolationException;
 import SLICGL.example.SLICGL_Inter_Bant_Transfer_Management.ExceptionHandlers.RepoExceptions.*;
+import SLICGL.example.SLICGL_Inter_Bant_Transfer_Management.ExceptionHandlers.TransferExceptions.TransferInputDataViolationException;
 import SLICGL.example.SLICGL_Inter_Bant_Transfer_Management.Logs.LogActivity;
 import SLICGL.example.SLICGL_Inter_Bant_Transfer_Management.Repositoriy.UserRepo;
 import SLICGL.example.SLICGL_Inter_Bant_Transfer_Management.Repositoriy.bankAccountRepo;
@@ -702,6 +703,62 @@ public class repoIMPL implements repoService {
                             null
                     )
             );
+        }
+    }
+
+    @Override
+    @RequiresPermission("FUNC-024")
+    @LogActivity(methodDescription = "This method will fetch all repos for manual transfers")
+    public ResponseEntity<customAPIResponse<List<repoListForManualTransfersDTO>>> getReposForManualTransfers() {
+        String sql = "SELECT repo.repo_id, acc.account_number FROM repos repo LEFT JOIN bank_account acc ON acc.account_id = repo.bank_account WHERE repo.is_deleted = 0 AND repo.is_invested = 0 AND DATE(repo.created_date) = CURRENT_DATE";
+        List<repoListForManualTransfersDTO> repoList = template.query(sql, new repoListForManualTransferMapper());
+        if (!repoList.isEmpty()) {
+            return ResponseEntity.status(HttpStatus.OK).body(
+                    new customAPIResponse<>(
+                            true,
+                            null,
+                            repoList
+                    )
+            );
+        } else {
+            return ResponseEntity.status(HttpStatus.NOT_FOUND).body(
+                    new customAPIResponse<>(
+                            false,
+                            "No repo details found",
+                            null
+                    )
+            );
+        }
+    }
+
+    @Override
+    @RequiresPermission("FUNC-024")
+    @LogActivity(methodDescription = "This method will fetch available balance for given repo id")
+    public ResponseEntity<customAPIResponse<BigDecimal>> getAvailableBalances(String repoId) {
+        // Check whether user has been provided repo id
+        if (repoId == null || repoId.isEmpty()) {
+            throw new RepoInputDataViolationException("Please provide repo id");
+        } else {
+            BigDecimal availableBalance = repoRepository.getAvailableBalance(repoId, repoId);
+            if (availableBalance == null) {
+                return ResponseEntity.status(HttpStatus.NOT_FOUND).body(new customAPIResponse<>(
+                        false,
+                        "Account Balance not found for selected Repo Account",
+                        null
+                ));
+            } else if (availableBalance.compareTo(BigDecimal.ZERO) == 0) {
+                return ResponseEntity.status(HttpStatus.OK).body(new customAPIResponse<>(
+                        true,
+                        null,
+                        availableBalance
+                ));
+            } else {
+                return ResponseEntity.status(HttpStatus.OK).body(new customAPIResponse<>(
+                        true,
+                        null,
+                        availableBalance
+                ));
+            }
         }
     }
 }

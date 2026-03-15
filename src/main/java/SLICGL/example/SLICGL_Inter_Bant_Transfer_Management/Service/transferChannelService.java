@@ -25,4 +25,7 @@ public interface transferChannelService {
     public ResponseEntity<customAPIResponse<List<getChannelsForDefineOptionsDTO>>> getChannelsForDeleteOptions();
 
     public ResponseEntity<customAPIResponse<List<transferChanelForTransferHistory>>> getTransferChanel();
+
+    public ResponseEntity<customAPIResponse<List<getTransferChanelForManualTransferDTO>>> getTransferChanelForManualTransfer();
+
 }

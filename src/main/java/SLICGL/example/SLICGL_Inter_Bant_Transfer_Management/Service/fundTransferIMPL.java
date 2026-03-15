@@ -17,6 +17,7 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.stereotype.Service;
+import org.springframework.web.bind.annotation.RequestBody;
 
 import java.math.BigDecimal;
 import java.time.LocalDate;
@@ -731,7 +732,6 @@ public class fundTransferIMPL implements fundTransferService {
         }
     }
 
-
     @Override
     @RequiresPermission("FUNC-030")
     @LogActivity(methodDescription = "This method will display transfers for reversals")
@@ -862,26 +862,183 @@ public class fundTransferIMPL implements fundTransferService {
         }
     }
 
-    public String configureTransferType(String selectedFromBankAccount, String selectedFromRepoAccount, String selectedToBankAccount, String selectedToRepoAccount) {
-        boolean fromBank = !selectedFromBankAccount.isEmpty();
-        boolean fromRepo = !selectedFromRepoAccount.isEmpty();
-        boolean toBank = !selectedToBankAccount.isEmpty();
-        boolean toRepo = !selectedToRepoAccount.isEmpty();
+    public String configureTransferType(String fromAccount, String fromRepo, String toAccount, String toRepo) {
+        boolean isFromBank = fromAccount != null;
+        boolean isFromRepo = fromRepo != null;
+        boolean isToBank = toAccount != null;
+        boolean isToRepo = toRepo != null;
 
-        if (fromBank && toBank) {
+        if (isFromBank && isToBank) {
             return "BANK_TO_BANK";
-        } else if (fromBank && toRepo) {
+        } else if (isFromBank && isToRepo) {
             return "BANK_TO_REPO";
-        } else if (fromRepo && toBank) {
+        } else if (isFromRepo && isToBank) {
             return "REPO_TO_BANK";
-        } else if (fromRepo && toRepo) {
+        } else if (isFromRepo && isToRepo) {
             return "REPO_TO_REPO";
         } else {
             return "INVALID";
         }
     }
 
+
+    @Override
     @Transactional
+    @RequiresPermission("FUNC-024")
+    @LogActivity(methodDescription = "This method will initiate a manual fund transfer")
+    public ResponseEntity<customAPIResponse<String>> initiateManualTransfers(@RequestBody manualFundTransferDTO manualFundTransfer) {
+        // Check whether user has been provided all required data
+        // Validate that either fromAccount or fromRepo is provided
+        boolean hasValidFrom = manualFundTransfer.getFromAccount() != null || manualFundTransfer.getFromRepo() != null;
+
+        // Validate that either toAccount or toRepo is provided
+        boolean hasValidTo = manualFundTransfer.getToAccount() != null || manualFundTransfer.getToRepo() != null;
+
+        // Validate channel
+        boolean hasValidChannel = manualFundTransfer.getChannel() != null;
+
+        // Validate amount (not null and not zero)
+        boolean hasValidAmount = manualFundTransfer.getAmount() != null &&
+                manualFundTransfer.getAmount().compareTo(BigDecimal.ZERO) != 0;
+
+        if (!hasValidFrom || !hasValidTo || !hasValidChannel || !hasValidAmount) {
+            throw new TransferInputDataViolationException("Please provide all required data");
+        } else {
+            // Check whether user provided a negative amount to initiate transfer
+            if (manualFundTransfer.getAmount().compareTo(BigDecimal.ZERO) < 0) {
+                throw new TransferInputDataViolationException("Transfer amount can not be negative");
+            } else {
+                String transferType = this.configureTransferType(manualFundTransfer.getFromAccount(), manualFundTransfer.getFromRepo(), manualFundTransfer.getToAccount(), manualFundTransfer.getToRepo());
+                switch (transferType) {
+                    //Case where fund transfer from bank account to another bank account;
+                    case "BANK_TO_BANK":
+                        //Check whether from account and to account numbers are same. If it is same, no fund transfer is required
+                        if (manualFundTransfer.getFromAccount().equals(manualFundTransfer.getToAccount())) {
+                            throw new TransferInputDataViolationException("From Bank Account and To Bank Account is same. No fund transfer is required");
+                        } else {
+                            //Check whether user tries to transfer an amount, which is higher than the available balance of from account
+                            BigDecimal availableFromBalance = accountBalanceRepository.getAvailableBalance(manualFundTransfer.getFromAccount(), manualFundTransfer.getFromAccount());
+                            if (availableFromBalance.compareTo(manualFundTransfer.getAmount()) < 0) {
+                                throw new TransferInputDataViolationException("Transfer failed due to insufficient balance. Please check your available balance and try again");
+                            } else {
+                                // Initiate fund transfer
+                                //Create new cross adjustment;
+                                String crossAdjustment = crossAdjustmentIMPL.saveNewCrossAdjustment();
+                                // Generate new transfer id
+                                String newTransferId = new TransferIdGenerator(transferRepository.getLastTransferId()).getNextId();
+                                this.newTransfer(newTransferId, manualFundTransfer.getFromAccount(), manualFundTransfer.getToAccount(), manualFundTransfer.getChannel(), manualFundTransfer.getAmount(), null, null, crossAdjustment);
+                                // Save from account balance adjustment
+                                accountBalanceAdjustments.saveNewAdjustment(accountRepository.findById(manualFundTransfer.getToAccount()).get().getAccountNumber(), manualFundTransfer.getAmount().multiply(BigDecimal.valueOf(-1)), accountBalanceRepository.getBalanceId(manualFundTransfer.getFromAccount(), LocalDate.now()), newTransferId, crossAdjustment);
+                                // Save to account balance adjustment
+                                accountBalanceAdjustments.saveNewAdjustment(accountRepository.findById(manualFundTransfer.getFromAccount()).get().getAccountNumber(), manualFundTransfer.getAmount(), accountBalanceRepository.getBalanceId(manualFundTransfer.getToAccount(), LocalDate.now()), newTransferId, crossAdjustment);
+                                return ResponseEntity.status(HttpStatus.OK).body(
+                                        new customAPIResponse<>(
+                                                true,
+                                                "Fund Transfer initiated successfully",
+                                                null
+                                        )
+                                );
+                            }
+                        }
+                        //Case where fund transfer from bank account to another bank account;
+                    case "BANK_TO_REPO":
+                        //Check whether from account and to repo account numbers are same. If it is same, no fund transfer is required
+                        if (manualFundTransfer.getFromAccount().equals(repoRepository.getRepoBankAccount(manualFundTransfer.getToRepo()))) {
+                            throw new TransferInputDataViolationException("From Bank Account and To Repo Bank Account is same. No fund transfer is required");
+                        } else {
+                            //Check whether user tries to transfer an amount, which is higher than the available balance of from account
+                            BigDecimal availableFromBalance = accountBalanceRepository.getAvailableBalance(manualFundTransfer.getFromAccount(), manualFundTransfer.getFromAccount());
+                            if (availableFromBalance.compareTo(manualFundTransfer.getAmount()) < 0) {
+                                throw new TransferInputDataViolationException("Transfer failed due to insufficient balance. Please check your available balance and try again");
+                            } else {
+                                // Initiate fund transfer
+                                //Create new cross adjustment;
+                                String crossAdjustment = crossAdjustmentIMPL.saveNewCrossAdjustment();
+                                // Generate new transfer id
+                                String newTransferId = new TransferIdGenerator(transferRepository.getLastTransferId()).getNextId();
+                                this.newTransfer(newTransferId, manualFundTransfer.getFromAccount(), repoRepository.getRepoBankAccount(manualFundTransfer.getToRepo()), manualFundTransfer.getChannel(), manualFundTransfer.getAmount(), null, manualFundTransfer.getToRepo(), crossAdjustment);
+                                // Save from account balance adjustment
+                                accountBalanceAdjustments.saveNewAdjustment(manualFundTransfer.getToRepo(), manualFundTransfer.getAmount().multiply(BigDecimal.valueOf(-1)), accountBalanceRepository.getBalanceId(manualFundTransfer.getFromAccount(), LocalDate.now()), newTransferId, crossAdjustment);
+                                // Save to repo balance adjustment
+                                repoAdjustment.saveNewAdjustment(accountRepository.findById(manualFundTransfer.getFromAccount()).get().getAccountNumber(), manualFundTransfer.getAmount(), manualFundTransfer.getToRepo(), newTransferId, crossAdjustment);
+                                return ResponseEntity.status(HttpStatus.OK).body(
+                                        new customAPIResponse<>(
+                                                true,
+                                                "Fund Transfer initiated successfully",
+                                                null
+                                        )
+                                );
+                            }
+                        }
+                    case "REPO_TO_BANK":
+                        //Check whether from repo account and to bank account numbers are same. If it is same, no fund transfer is required
+                        if (repoRepository.getRepoBankAccount(manualFundTransfer.getFromRepo()).equals(manualFundTransfer.getToAccount())) {
+                            throw new TransferInputDataViolationException("From Repo Account and To Bank Account is same. No fund transfer is required");
+                        } else {
+                            //Check whether user tries to transfer an amount, which is higher than the available balance of from repo account
+                            BigDecimal availableFromBalance = repoRepository.getAvailableBalance(manualFundTransfer.getFromRepo(), manualFundTransfer.getFromRepo());
+                            if (availableFromBalance.compareTo(manualFundTransfer.getAmount()) < 0) {
+                                throw new TransferInputDataViolationException("Transfer failed due to insufficient balance. Please check your available balance and try again");
+                            } else {
+                                // Initiate fund transfer
+                                //Create new cross adjustment;
+                                String crossAdjustment = crossAdjustmentIMPL.saveNewCrossAdjustment();
+                                // Generate new transfer id
+                                String newTransferId = new TransferIdGenerator(transferRepository.getLastTransferId()).getNextId();
+                                this.newTransfer(newTransferId, repoRepository.getRepoBankAccount(manualFundTransfer.getFromRepo()), manualFundTransfer.getToAccount(), manualFundTransfer.getChannel(), manualFundTransfer.getAmount(), manualFundTransfer.getFromRepo(), null, crossAdjustment);
+                                // Save from repo balance adjustment
+                                repoAdjustment.saveNewAdjustment(accountRepository.findById(manualFundTransfer.getToAccount()).get().getAccountNumber(), manualFundTransfer.getAmount().multiply(BigDecimal.valueOf(-1)), manualFundTransfer.getFromRepo(), newTransferId, crossAdjustment);
+                                // Save to account balance adjustment
+                                accountBalanceAdjustments.saveNewAdjustment(manualFundTransfer.getFromRepo(), manualFundTransfer.getAmount(), accountBalanceRepository.getBalanceId(manualFundTransfer.getToAccount(), LocalDate.now()), newTransferId, crossAdjustment);
+                                return ResponseEntity.status(HttpStatus.OK).body(
+                                        new customAPIResponse<>(
+                                                true,
+                                                "Fund Transfer initiated successfully",
+                                                null
+                                        )
+                                );
+                            }
+                        }
+                    case "REPO_TO_REPO":
+                        //Check whether from repo account and to repo account numbers are same. If it is same, no fund transfer is required
+                        if (repoRepository.getRepoBankAccount(manualFundTransfer.getFromRepo()).equals(repoRepository.getRepoBankAccount(manualFundTransfer.getToRepo()))) {
+                            throw new TransferInputDataViolationException("From Repo Account and To Repo Account is same. No fund transfer is required");
+                        } else {
+                            //Check whether user tries to transfer an amount, which is higher than the available balance of from repo account
+                            BigDecimal availableFromBalance = repoRepository.getAvailableBalance(manualFundTransfer.getFromRepo(), manualFundTransfer.getFromRepo());
+                            if (availableFromBalance.compareTo(manualFundTransfer.getAmount()) < 0) {
+                                throw new TransferInputDataViolationException("Transfer failed due to insufficient balance. Please check your available balance and try again");
+                            } else {
+                                // Initiate fund transfer
+                                //Create new cross adjustment;
+                                String crossAdjustment = crossAdjustmentIMPL.saveNewCrossAdjustment();
+                                // Generate new transfer id
+                                String newTransferId = new TransferIdGenerator(transferRepository.getLastTransferId()).getNextId();
+                                this.newTransfer(newTransferId, repoRepository.getRepoBankAccount(manualFundTransfer.getFromRepo()), repoRepository.getRepoBankAccount(manualFundTransfer.getToRepo()), manualFundTransfer.getChannel(), manualFundTransfer.getAmount(), manualFundTransfer.getFromRepo(), manualFundTransfer.getToRepo(), crossAdjustment);
+                                // Save from repo balance adjustment
+                                repoAdjustment.saveNewAdjustment(manualFundTransfer.getToRepo(), manualFundTransfer.getAmount().multiply(BigDecimal.valueOf(-1)), manualFundTransfer.getFromRepo(), newTransferId, crossAdjustment);
+                                // Save from repo balance adjustment
+                                repoAdjustment.saveNewAdjustment(manualFundTransfer.getFromRepo(), manualFundTransfer.getAmount(), manualFundTransfer.getToRepo(), newTransferId, crossAdjustment);
+                                return ResponseEntity.status(HttpStatus.OK).body(
+                                        new customAPIResponse<>(
+                                                true,
+                                                "Fund Transfer initiated successfully",
+                                                null
+                                        )
+                                );
+                            }
+                        }
+                }
+            }
+        }
+        return null;
+    }
+
+
+
+
+
+    /*@Transactional
     @Override
     public ResponseEntity<customAPIResponse<String>> initiateManualTransfers(String selectedFromBankAccount, String selectedFromAccountNumber, String selectedFromRepoAccount, String selectedToBankAccount, String selectedToAccountNumber, String selectedToRepoAccount, BigDecimal amount, String transferChannel) {
         try {
@@ -934,5 +1091,5 @@ public class fundTransferIMPL implements fundTransferService {
                     )
             );
         }
-    }
+    }*/
 }

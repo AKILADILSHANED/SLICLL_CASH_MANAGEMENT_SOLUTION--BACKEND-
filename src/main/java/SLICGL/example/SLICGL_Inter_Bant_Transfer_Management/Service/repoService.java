@@ -42,4 +42,8 @@ public interface repoService {
 
     public ResponseEntity<customAPIResponse<List<getRepoAccountsListDTO>>> getRepoAccountsList();
 
+    public ResponseEntity<customAPIResponse<List<repoListForManualTransfersDTO>>> getReposForManualTransfers();
+
+    public ResponseEntity<customAPIResponse<BigDecimal>> getAvailableBalances(String repoId);
+
 }

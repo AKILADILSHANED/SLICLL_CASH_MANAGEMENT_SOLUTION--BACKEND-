@@ -61,4 +61,9 @@ public class transferChannelController {
     public ResponseEntity<customAPIResponse<List<transferChanelForTransferHistory>>> getTransferChanel() {
         return transferChannel.getTransferChanel();
     }
+
+    @GetMapping(value = "/get-chanel-for-manual-transfer")
+    public ResponseEntity<customAPIResponse<List<getTransferChanelForManualTransferDTO>>> getTransferChanelForManualTransfer() {
+        return transferChannel.getTransferChanelForManualTransfer();
+    }
 }

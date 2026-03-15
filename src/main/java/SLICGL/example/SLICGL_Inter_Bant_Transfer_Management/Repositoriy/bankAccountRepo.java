@@ -1,6 +1,7 @@
 package SLICGL.example.SLICGL_Inter_Bant_Transfer_Management.Repositoriy;
 
 import SLICGL.example.SLICGL_Inter_Bant_Transfer_Management.DTO.balanceEnterDTO;
+import SLICGL.example.SLICGL_Inter_Bant_Transfer_Management.DTO.bankAccountListForManualTransfersDTO;
 import SLICGL.example.SLICGL_Inter_Bant_Transfer_Management.DTO.getBankAccountListDTO;
 import SLICGL.example.SLICGL_Inter_Bant_Transfer_Management.DTO.getBankAccountsForFundRequestDTO;
 import SLICGL.example.SLICGL_Inter_Bant_Transfer_Management.Entity.bankAccount;
@@ -36,4 +37,9 @@ public interface bankAccountRepo extends JpaRepository<bankAccount, String> {
 
     @Query(value = "SELECT CASE WHEN (SELECT acc.account_id FROM bank_account acc WHERE acc.account_id = ? AND acc.delete_status = '0') IS NULL THEN false ELSE true END AS 'availability'", nativeQuery = true)
     public Integer accountAvailability(String accountId);
+
+    @Query(value = "SELECT acc.account_id, acc.account_number FROM bank_account acc LEFT JOIN account_balance bal ON \n" +
+            "acc.account_id = bal.account_id WHERE acc.delete_status = 0 AND bal.delete_status = 0 AND DATE(bal.balance_date)\n" +
+            "= CURRENT_DATE", nativeQuery = true)
+    public List<bankAccountListForManualTransfersDTO> getAccountList();
 }

@@ -329,4 +329,28 @@ public class bankAccountIMPL implements bankAccountService {
             }
         }
     }
+
+    @Override
+    @RequiresPermission("FUNC-024")
+    @LogActivity(methodDescription = "This method will fetch all bank accounts for manual transfers")
+    public ResponseEntity<customAPIResponse<List<bankAccountListForManualTransfersDTO>>> getBankAccountsForManualTransfers() {
+        List<bankAccountListForManualTransfersDTO> accountList = bankAccountRepository.getAccountList();
+        if (!accountList.isEmpty()) {
+            return ResponseEntity.status(HttpStatus.OK).body(
+                    new customAPIResponse<>(
+                            true,
+                            null,
+                            accountList
+                    )
+            );
+        } else {
+            return ResponseEntity.status(HttpStatus.NOT_FOUND).body(
+                    new customAPIResponse<>(
+                            false,
+                            "No Bank Accounts found",
+                            null
+                    )
+            );
+        }
+    }
 }

@@ -2,8 +2,10 @@ package SLICGL.example.SLICGL_Inter_Bant_Transfer_Management.Service;
 
 import SLICGL.example.SLICGL_Inter_Bant_Transfer_Management.APIResponse.customAPIResponse;
 import SLICGL.example.SLICGL_Inter_Bant_Transfer_Management.Entity.crossAdjustments;
+import SLICGL.example.SLICGL_Inter_Bant_Transfer_Management.Logs.LogActivity;
 import SLICGL.example.SLICGL_Inter_Bant_Transfer_Management.Repositoriy.UserRepo;
 import SLICGL.example.SLICGL_Inter_Bant_Transfer_Management.Repositoriy.crossAdjustmentRepo;
+import SLICGL.example.SLICGL_Inter_Bant_Transfer_Management.Security.RequiresPermission;
 import jakarta.servlet.http.HttpSession;
 import jakarta.transaction.Transactional;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -16,7 +18,7 @@ import java.time.LocalDateTime;
 import java.util.List;
 
 @Component
-public class crossAdjustmentIMPL implements crossAdjustmentService{
+public class crossAdjustmentIMPL implements crossAdjustmentService {
     @Autowired
     crossAdjustmentRepo crossAdjustmentRepository;
 
@@ -27,6 +29,8 @@ public class crossAdjustmentIMPL implements crossAdjustmentService{
     UserRepo UserRepository;
 
     @Override
+    @RequiresPermission(value = "FUNC-024")
+    @LogActivity(methodDescription = "This method will generate a new cross adjustment id")
     public String generateNewCrossAdjustmentId() {
         //Create new  Cross Adjustment ID;
         String newAdjustmentId;
@@ -35,13 +39,13 @@ public class crossAdjustmentIMPL implements crossAdjustmentService{
 
         //Get last Cross Adjustment ID from Cross_Adjustment table;
         String lastAdjustmentId = crossAdjustmentRepository.getLastAdjustmentId();
-        if(lastAdjustmentId == null){
+        if (lastAdjustmentId == null) {
             newAdjustmentId = "CRSADJ-" + currentYear + currentMonth + "-0001";
-        }else {
-            if((currentYear + currentMonth).equals(lastAdjustmentId.substring(7,13))){
-                int newNumericAdjustmentId = Integer.parseInt(lastAdjustmentId.substring(14,18)) + 1;
+        } else {
+            if ((currentYear + currentMonth).equals(lastAdjustmentId.substring(7, 13))) {
+                int newNumericAdjustmentId = Integer.parseInt(lastAdjustmentId.substring(14, 18)) + 1;
                 newAdjustmentId = "CRSADJ-" + currentYear + currentMonth + String.format("-%04d", newNumericAdjustmentId);
-            }else {
+            } else {
                 newAdjustmentId = "CRSADJ-" + currentYear + currentMonth + "-0001";
             }
         }
@@ -50,36 +54,38 @@ public class crossAdjustmentIMPL implements crossAdjustmentService{
 
     @Transactional
     @Override
+    @RequiresPermission(value = "FUNC-024")
+    @LogActivity(methodDescription = "This method will save new cross adjustment")
     public String saveNewCrossAdjustment() {
-        try{
+        try {
             //Get new cross adjustment id;
             String generatedAdjustmentId = this.generateNewCrossAdjustmentId();
             crossAdjustments adjustmentEntity = new crossAdjustments(generatedAdjustmentId, LocalDateTime.now(), 0, null);
             crossAdjustmentRepository.save(adjustmentEntity);
             return generatedAdjustmentId;
-        }catch (Exception e){
+        } catch (Exception e) {
             return "Error occurred while generating new cross adjustment id";
         }
     }
 
     @Override
     public ResponseEntity<customAPIResponse<List<String>>> getCrossAdjustmentList(String balanceId) {
-        try{
+        try {
             List<String> adjustmentList = crossAdjustmentRepository.getCrossAdjustmentList(balanceId);
-            if(!adjustmentList.isEmpty()){
+            if (!adjustmentList.isEmpty()) {
                 return ResponseEntity.status(HttpStatus.OK).body(new customAPIResponse<>(
                         true,
                         null,
                         adjustmentList
                 ));
-            }else {
+            } else {
                 return ResponseEntity.status(HttpStatus.CONFLICT).body(new customAPIResponse<>(
                         false,
                         "No Adjustments can be found for provided Balance ID!",
                         null
                 ));
             }
-        }catch (Exception e){
+        } catch (Exception e) {
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(new customAPIResponse<>(
                     false,
                     "Un-expected error occurred. Please contact the administrator!",
