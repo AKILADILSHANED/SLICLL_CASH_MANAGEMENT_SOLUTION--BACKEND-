@@ -4,7 +4,6 @@ import SLICGL.example.SLICGL_Inter_Bant_Transfer_Management.APIResponse.customAP
 import SLICGL.example.SLICGL_Inter_Bant_Transfer_Management.DTO.*;
 import SLICGL.example.SLICGL_Inter_Bant_Transfer_Management.Entity.User;
 import SLICGL.example.SLICGL_Inter_Bant_Transfer_Management.Entity.subFunction;
-import SLICGL.example.SLICGL_Inter_Bant_Transfer_Management.ExceptionHandlers.*;
 import SLICGL.example.SLICGL_Inter_Bant_Transfer_Management.ExceptionHandlers.UserExceptions.*;
 import SLICGL.example.SLICGL_Inter_Bant_Transfer_Management.ExceptionHandlers.UserExceptions.PasswordResetException;
 import SLICGL.example.SLICGL_Inter_Bant_Transfer_Management.Logs.LogActivity;
@@ -29,8 +28,10 @@ import org.springframework.stereotype.Service;
 
 import java.io.IOException;
 import java.time.LocalDateTime;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Random;
+import java.util.regex.Pattern;
 
 @Service
 public class UserLoginIMPL implements UserService {
@@ -402,6 +403,9 @@ public class UserLoginIMPL implements UserService {
             logger.error("Email: {} | Password reset was unsuccessful. Did not provided values for all required fields.", resetData.getUserEmail());
             throw new InvalidPasswordResetDataException("Please provide data for successful password reset");
         } else {
+            // NEW: Validate new password against security criteria
+            validatePasswordCriteria(resetData.getChangedPassword());
+
             // Check whether any User is available for provided Email;
             User availableUser = userRepository.getPasswordResetUser(resetData.getUserEmail());
             //Check whether encrypted password and user provided temporary password is matched.
@@ -426,6 +430,43 @@ public class UserLoginIMPL implements UserService {
                     return ResponseEntity.status(HttpStatus.OK).body(response);
                 }
             }
+        }
+    }
+
+    private void validatePasswordCriteria(String password) {
+        List<String> errors = new ArrayList<>();
+
+        // Check minimum length
+        if (password.length() < 8) {
+            errors.add("Password must be at least 8 characters long");
+        }
+
+        // Check for at least one uppercase letter
+        if (!Pattern.compile("[A-Z]").matcher(password).find()) {
+            errors.add("Password must contain at least one uppercase letter (A-Z)");
+        }
+
+        // Check for at least one lowercase letter
+        if (!Pattern.compile("[a-z]").matcher(password).find()) {
+            errors.add("Password must contain at least one lowercase letter (a-z)");
+        }
+
+        // Check for at least one number
+        if (!Pattern.compile("[0-9]").matcher(password).find()) {
+            errors.add("Password must contain at least one number (0-9)");
+        }
+
+        // Check for at least one special character from the specified set
+        String specialChars = "!@#$%^&*()_+\\-=\\[\\]{}|\\\\:;\"'<>,.?/~";
+        if (!Pattern.compile("[" + Pattern.quote(specialChars) + "]").matcher(password).find()) {
+            errors.add("Password must contain at least one special character from: ! @ # $ % ^ & * ( ) _ + - = [ ] { } | \\ : ; \" ' < > , . ? / ~");
+        }
+
+        // If there are validation errors, throw exception with combined message
+        if (!errors.isEmpty()) {
+            String errorMessage = String.join(" | ", errors);
+            logger.error("Password validation failed: {}", errorMessage);
+            throw new InvalidPasswordResetDataException(errorMessage);
         }
     }
 
